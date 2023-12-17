@@ -2,7 +2,7 @@
   (layer "F.Cu")
   (descr "Surface Mount Tactile Switch for High-Density Mounting, 3.1mm height, https://omronfs.omron.com/en_US/ecb/products/pdf/en-b3fs.pdf")
   (tags "Tactile Switch")
-  (attr smd)
+  (attr through_hole)
   (fp_text reference "REF**" (at 0 -7) (layer "F.SilkS")
       (effects (font (size 1 1) (thickness 0.15)))
     (tstamp c0ef9ad1-8ec9-4fac-a801-e5fec4da4173)
