@@ -143,10 +143,6 @@ uint8_t const desc_configuration_joy[] = {
 
     // Interface number, string index, protocol, report descriptor len, EP In
     // address, size & polling interval
-    //TUD_HID_DESCRIPTOR(ITF_NUM_JOY, 4, HID_ITF_PROTOCOL_NONE,
-    //                   sizeof(desc_hid_report_joy), EPNUM_JOY,
-    //                   CFG_TUD_HID_EP_BUFSIZE, 1),
-
     TUD_HID_INOUT_DESCRIPTOR(ITF_NUM_JOY, 4, HID_ITF_PROTOCOL_NONE,
                        sizeof(desc_hid_report_joy), EPNUM_JOY_OUT, EPNUM_JOY_IN,
                        CFG_TUD_HID_EP_BUFSIZE, 1),

@@ -26,7 +26,7 @@ enum {
 
 #define DIVAPICO_REPORT_DESC_JOYSTICK                                          \
     HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                    \
-    HID_USAGE(HID_USAGE_DESKTOP_JOYSTICK),                                     \
+    HID_USAGE(HID_USAGE_DESKTOP_GAMEPAD),                                     \
     HID_COLLECTION(HID_COLLECTION_APPLICATION),                                \
         HID_LOGICAL_MIN(0), HID_LOGICAL_MAX(1),                                \
         HID_PHYSICAL_MIN(0), HID_PHYSICAL_MAX(1),                              \
@@ -41,10 +41,10 @@ enum {
         HID_REPORT_SIZE(4), HID_REPORT_COUNT(1),                               \
         0x65, 0x14, /* Unit */                                                 \
         HID_USAGE(HID_USAGE_DESKTOP_HAT_SWITCH),                               \
-        HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                     \
+        HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE | HID_NO_NULL_POSITION),\
         0x65, 0x00, /* Unit None */                                            \
         HID_REPORT_COUNT(1),                                                   \
-        HID_INPUT(HID_CONSTANT | HID_VARIABLE | HID_ABSOLUTE),                 \
+        HID_INPUT(HID_CONSTANT | HID_ARRAY | HID_ABSOLUTE),                 \
                                                                                \
         HID_LOGICAL_MAX_N(0xff, 2), HID_PHYSICAL_MAX_N(0xff, 2), /* Analog */  \
         HID_USAGE(HID_USAGE_DESKTOP_X), HID_USAGE(HID_USAGE_DESKTOP_Y),        \

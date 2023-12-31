@@ -13,6 +13,7 @@
 #include "cli.h"
 
 #include "pn532.h"
+#include "usb_descriptors.h"
 
 #define SENSE_LIMIT_MAX 9
 #define SENSE_LIMIT_MIN -9
