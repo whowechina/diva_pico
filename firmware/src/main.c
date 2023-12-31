@@ -49,10 +49,10 @@ struct __attribute__((packed)) {
 void report_usb_hid()
 {
     if (tud_hid_ready()) {
-        hid_joy.HAT = 0;
+        hid_joy.HAT = 0x08;
         hid_joy.VendorSpec = 0;
         if (diva_cfg->hid.joy) {
-            tud_hid_n_report(0x00, REPORT_ID_JOYSTICK, &hid_joy, sizeof(hid_joy));
+            tud_hid_n_report(0x00, 0, &hid_joy, sizeof(hid_joy));
         }
         if (diva_cfg->hid.nkro &&
             (memcmp(&hid_nkro, &sent_hid_nkro, sizeof(hid_nkro)) != 0)) {
@@ -66,16 +66,16 @@ static void gen_joy_report()
 {
     hid_joy.axis = 0;
     for (int i = 0; i < 16; i++) {
-        if (slider_touched(i * 2)) {
-            hid_joy.axis |= 1 << (30 - i * 2);
+        if (slider_touched(15 - i)) {
+            hid_joy.axis |= 0x03 << (i * 2);
         }
-        if (slider_touched(i * 2 + 1)) {
-            hid_joy.axis |= 1 << (31 - i * 2);
-        }
-
     }
-    hid_joy.axis ^= 0x80808080; // some magic number from CrazyRedMachine
-    hid_joy.buttons = 0;
+    hid_joy.axis ^= 0x80808080;
+    uint16_t button = button_read();
+    hid_joy.buttons = (button & 0x0f) |
+                     ((button & 0x10) << 8) |
+                     ((button & 0x60) << 3);
+
 }
 
 const uint8_t keycode_table[128][2] = { HID_ASCII_TO_KEYCODE };
@@ -110,17 +110,17 @@ static void run_lights()
 {
     uint64_t now = time_us_64();
     uint32_t button_colors[] = { 
-        rgb32(0, 0xff, 0, false),
-        rgb32(0xa0, 0x10, 0xa0, false),
-        rgb32(0, 0, 0xff, false),
-        rgb32(0xff, 0, 0, false),
-        rgb32(0x80, 0x80, 0x80, false)
+        rgb32(0x70, 0x08, 0x50, false),
+        rgb32(0x80, 0, 0, false),
+        rgb32(0, 0, 0x80, false),
+        rgb32(0, 0x80, 0, false),
+        rgb32(0x10, 0x10, 0x10, false)
     };
 
     uint16_t buttons = button_read();
     for (int i = 0; i < 5; i++) {
         bool pressed = buttons & (1 << i);
-        rgb_button_color(i, pressed ? 0 : button_colors[i]);
+        rgb_button_color(i, pressed ? button_colors[i] : 0x808080);
     }
 
     if (now - last_hid_time >= 1000000) {
@@ -225,6 +225,13 @@ int main(void)
     return 0;
 }
 
+
+struct __attribute__((packed)) {
+    uint16_t buttons;
+    uint8_t  HAT;
+    uint32_t axis;
+} hid_joy_out = {0};
+
 // Invoked when received GET_REPORT control request
 // Application must fill buffer report's content and return its length.
 // Return zero will cause the stack to STALL request
@@ -242,6 +249,8 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize)
 {
+    return;
+
     if (report_type == HID_REPORT_TYPE_OUTPUT) {
         if (report_id == REPORT_ID_LED_SLIDER_16) {
             rgb_set_brg(0, buffer, bufsize / 3);

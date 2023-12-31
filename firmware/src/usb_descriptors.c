@@ -55,7 +55,7 @@ tusb_desc_device_t desc_device_joy = {
 // vid 0x0f0d, pid 0x0092, interface 1
 
     .idVendor = 0x0f0d,
-    .idProduct = 0x0092,
+    .idProduct = 0x00fb,
     .bcdDevice = 0x0100,
 
     .iManufacturer = 0x01,
@@ -116,19 +116,24 @@ enum { ITF_NUM_JOY, ITF_NUM_LED, ITF_NUM_NKRO,
        ITF_NUM_AIME, ITF_NUM_AIME_DATA,
        ITF_NUM_TOTAL };
 
-#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN * 3 + TUD_CDC_DESC_LEN * 2)
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + \
+                          TUD_HID_INOUT_DESC_LEN * 1 + \
+                          TUD_HID_DESC_LEN * 2 + \
+                          TUD_CDC_DESC_LEN * 2)
 
-#define EPNUM_JOY 0x81
-#define EPNUM_LED 0x82
-#define EPNUM_KEY 0x83
+#define EPNUM_JOY_OUT 0x01
+#define EPNUM_JOY_IN 0x81
 
-#define EPNUM_CLI_NOTIF 0x85
-#define EPNUM_CLI_OUT   0x06
-#define EPNUM_CLI_IN    0x86
+#define EPNUM_LED 0x86
+#define EPNUM_KEY 0x87
 
-#define EPNUM_AIME_NOTIF 0x87
-#define EPNUM_AIME_OUT   0x08
-#define EPNUM_AIME_IN    0x88
+#define EPNUM_CLI_NOTIF 0x89
+#define EPNUM_CLI_OUT   0x0a
+#define EPNUM_CLI_IN    0x8a
+
+#define EPNUM_AIME_NOTIF 0x8b
+#define EPNUM_AIME_OUT   0x0c
+#define EPNUM_AIME_IN    0x8c
 
 uint8_t const desc_configuration_joy[] = {
     // Config number, interface count, string index, total length, attribute,
@@ -138,8 +143,12 @@ uint8_t const desc_configuration_joy[] = {
 
     // Interface number, string index, protocol, report descriptor len, EP In
     // address, size & polling interval
-    TUD_HID_DESCRIPTOR(ITF_NUM_JOY, 4, HID_ITF_PROTOCOL_NONE,
-                       sizeof(desc_hid_report_joy), EPNUM_JOY,
+    //TUD_HID_DESCRIPTOR(ITF_NUM_JOY, 4, HID_ITF_PROTOCOL_NONE,
+    //                   sizeof(desc_hid_report_joy), EPNUM_JOY,
+    //                   CFG_TUD_HID_EP_BUFSIZE, 1),
+
+    TUD_HID_INOUT_DESCRIPTOR(ITF_NUM_JOY, 4, HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_joy), EPNUM_JOY_OUT, EPNUM_JOY_IN,
                        CFG_TUD_HID_EP_BUFSIZE, 1),
 
     TUD_HID_DESCRIPTOR(ITF_NUM_LED, 5, HID_ITF_PROTOCOL_NONE,
