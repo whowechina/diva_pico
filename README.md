@@ -60,7 +60,7 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
 
 * 1x Rasberry Pico Pi Pico or pin-to-pin compatible clones.  
   https://www.raspberrypi.com/products/raspberry-pi-pico  
-  Sticking a thin scotch tape to avoid short-circuit is a good idea.
+  Sticking a thin scotch tape to avoid short-circuit is a good idea.  
   <img src="doc/some_tape.jpg" width="40%">
 
 * 16x WS2812B-4020 side-facing RGB LEDs for the slider.  
