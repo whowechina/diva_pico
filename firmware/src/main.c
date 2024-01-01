@@ -141,7 +141,7 @@ static void core1_loop()
             mutex_exit(&core1_io_lock);
         }
         cli_fps_count(1);
-        sleep_ms(1);
+        sleep_us(700);
     }
 }
 
@@ -162,6 +162,7 @@ static void core0_loop()
         gen_joy_report();
         gen_nkro_report();
         report_usb_hid();
+        sleep_us(600);
     }
 }
 

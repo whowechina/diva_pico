@@ -13,21 +13,12 @@ diva_cfg_t *diva_cfg;
 
 static diva_cfg_t default_cfg = {
     .colors = {
-        .key_on_upper = 0x00FF00,
-        .key_on_lower = 0xff0000,
-        .key_on_both = 0xff0000,
+        .key_on = 0xff0000,
         .key_off = 0x000000,
-        .gap = 0x000000,
     },
     .style = {
         .key = 0,
-        .gap = 0,
-        .tof = 0,
         .level = 127,
-    },
-    .tof = {
-        .offset = 80,
-        .pitch = 20,
     },
     .sense = {
         .filter = 0x10,

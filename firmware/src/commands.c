@@ -21,18 +21,15 @@
 static void disp_colors()
 {
     printf("[Colors]\n");
-    printf("  Key upper: %06lx, lower: %06lx, both: %06lx, off: %06lx\n", 
-           diva_cfg->colors.key_on_upper, diva_cfg->colors.key_on_lower,
-           diva_cfg->colors.key_on_both, diva_cfg->colors.key_off);
-    printf("  Gap: %06lx\n", diva_cfg->colors.gap);
+    printf("  Key on: %06lx, off: %06lx\n", 
+           diva_cfg->colors.key_on, diva_cfg->colors.key_off);
 }
 
 static void disp_style()
 {
     printf("[Style]\n");
-    printf("  Key: %d, Gap: %d, ToF: %d, Level: %d\n",
-           diva_cfg->style.key, diva_cfg->style.gap,
-           diva_cfg->style.tof, diva_cfg->style.level);
+    printf("  Key: %d, Level: %d\n",
+           diva_cfg->style.key, diva_cfg->style.level);
 }
 
 static void disp_sense()
@@ -44,13 +41,9 @@ static void disp_sense()
     printf("  Sensitivity (global: %+d):\n", diva_cfg->sense.global);
     printf("    | 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|15|16|\n");
     printf("  ---------------------------------------------------\n");
-    printf("  A |");
+    printf("    |");
     for (int i = 0; i < 16; i++) {
-        printf("%+2d|", diva_cfg->sense.keys[i * 2]);
-    }
-    printf("\n  B |");
-    for (int i = 0; i < 16; i++) {
-        printf("%+2d|", diva_cfg->sense.keys[i * 2 + 1]);
+        printf("%+2d|", diva_cfg->sense.keys[i]);
     }
     printf("\n");
     printf("  Debounce (touch, release): %d, %d\n",
@@ -329,12 +322,12 @@ static void handle_raw()
     for (int i = 0; i < 16; i++) {
         printf("%3d|", raw[i]);
     }
-    printf("\n|");
+    printf("\n");
     printf("|");
     for (int i = 0; i < 16; i++) {
         printf("%2d |", slider_touched(i));
     }
-    printf("\n|");
+    printf("\n");
 }
 
 static void handle_save()

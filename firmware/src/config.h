@@ -11,9 +11,7 @@
 
 typedef struct __attribute__((packed)) {
     struct {
-        uint32_t key_on_upper;
-        uint32_t key_on_lower;
-        uint32_t key_on_both;
+        uint32_t key_on;
         uint32_t key_off;
         uint32_t gap;
     } colors;
