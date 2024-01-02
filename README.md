@@ -73,7 +73,6 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
   https://www.sparkfun.com/products/retired/9695  
   Before solder MP121 module to the main PCB board, remember to **cut (unshort) the ADDR pin** which is short by default.  
   <img src="doc/mpr121_cut.png" width="40%">  
-  There's not enough space for the whole height of MPR121 module plus the lead pads. So you need to solder the module like the picture shows below.  
 
 * 8x 0603 1uF (0.1~1uF all fine) capacitors (C1 to C8), OPTIONAL, recommended.
 
@@ -86,8 +85,9 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
 * 1x Omron B3F-4005 or B3F-4000 micro-switch.
   https://www.mouser.com/ProductDetail/Omron-Electronics/B3F-4000?qs=B3tblJ0Nlt8c5sbFRctxww%3D%3D
 
-* 3M 5421 UHMW PE film tape, important for button feel.
+* 3M 5423 or 5421 UHMW PE film tape, important for button feel. 5423 is better for its thickness.  
   https://www.3m.com/3M/en_US/p/d/b40069119/
+
   You need to apply tapes to the contact surface of button to switch and button to base clamp.  
   <img src="doc/3m_tape_0.jpg" width="25%">
   <img src="doc/3m_tape_1.jpg" width="25%">
@@ -110,7 +110,10 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
 * Base: `Production\3D\diva_pico_base.stl`.
 * Cover Base: `Production\3D\diva_pico_cover_base.stl`.
 * Cover: `Production\3D\diva_pico_cover.3mf`, with optional multi-color support.
-* Buttons: `Production\3D\diva_pico_buttons_*_*.3mf`, with multi-color support. Note that components (the hinge, the seat and the logos on it) are mixed in one file, you need to cherry-pick before printing.  
+* Buttons: `Production\3D\diva_pico_buttons_*_*.3mf`, with multi-color support.  
+  Note that components (the button body, the seat and the logos on it) are mixed in one file, you need to cherry-pick before printing. For example, you need the FixedButton, a proper seat and a logo for one print in the following "diva_pico_buttons_fixed_48".  
+  <img src="doc/cherrypick.png" width="40%">
+
   You have two options for the hinge, one is fixed hinge, the other is rotating hinge. For rotating when, you need a steel 2mm*50mm shaft. Rotating one feels better, but slightly difficult to assemble.    
   <img src="doc/fix_hinge.jpg" width="40%">
   <img src="doc/rotating_hinge.jpg" width="40%">
@@ -127,7 +130,7 @@ You need **6x M3*10mm regular screws** to fix all things.
 6x silicone anti-slip pads can be applied to the bottom side of the base to provide stability when playing.  
 
 #### Button dome choices
-* Go find a servie, they blow acrylic to domes according to your numbers. The numbers are: 42mm outer diameter, 18mm outer height, made from 2mm clear acrylic, no brim. I find this most perfect. And you need to print 42mm buttons.  
+* Go find a servie, they blow acrylic to domes according to your numbers. The *perfect* numbers are: 42mm outer diameter, 18mm outer height, made from 2mm clear acrylic, no brim. And you need to print 42mm buttons.  
   <img src="doc/dome_1.jpg" width="60%">
 * Go buy 60mm dome buttons with 48mm diameter dome. I found there're two types, one is perfect and inner diameter is 46mm (the left side one), the other is too tall and inner diameter is 45mm (the right side one). You need to print the buttons according to what dome you get.  
   <img src="doc/dome_2.jpg" width="60%">
