@@ -1,4 +1,5 @@
 # Diva Pico - Project Diva Style Mini Controller
+[点这里可以切换到中文版](README_CN.md)
 
 <img src="doc/main.jpg" width="80%">
 
@@ -50,9 +51,10 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
 * **MISTAKE: Neglecting to cut the ADDR pin trace on the MPR121 module.**  
   The MPR121 module in the market has the ADDR pin pre-connected to ground. But the board expects a floating ADDR pin, otherwise the ADDR pin will short the circuit. Please verify your "CUT" using a multimeter.
 * **MISTAKE: Rushing to replace components when something fails.**  
-  Be aware that desoldering and soldering large SMD components is a challenging task. It carries the risk of damaging the component or the PCB board. Patience and caution are crucial. Look at the schematics and PCB design files and ask help from community first.
-* **MISTAKE: Prematurely assuming that the Raspberry Pi Pico or other modules are faulty.**  
-  While it's possible that these components could be defective, more often than not, the issue lies in the soldering. Therefore, questioning the integrity of these components should be your last resort.
+  Sometimes people prematurely assumes that the Raspberry Pi Pico or other modules are faulty.
+  Be aware that desoldering and soldering large SMD components is a challenging task. It carries the risk of damaging the component or the PCB board. Patience and caution are crucial. Look at the schematics and PCB design files and ask help from community first. Questioning the integrity of these components should be your last resort.
+* **MISTAKE: Failing to properly solder the 3 USB pins of the Raspberry Pi Pico.**  
+  These pins are at the bottom side of the PCB. It's a common oversight to either forget to solder them or to leave air bubbles during the process. To avoid this, solder slowly from one side of the hole, using minimal solder wire and a generous amount of flux.
 
 ### PCB
 * Go JLCPCB and make order with the gerber zip file (latest `Production\PCB\diva_main_xxx.zip`), regular FR-4 board, black color, thickness is **1.6mm**.  
@@ -71,7 +73,7 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
 
 * 2x MPR121 modules, there're many types in the market, choose ones like this.  
   https://www.sparkfun.com/products/retired/9695  
-  Before solder MP121 module to the main PCB board, remember to **cut (unshort) the ADDR pin** which is short by default.  
+  Before solder MP121 module to the main PCB board, remember to use a knife to **cut (unshort) the tiny trace that connects ADDR to the GND**. Please be careful not to cut more than necessary.  
   <img src="doc/mpr121_cut.png" width="40%">  
 
 * 8x 0603 1uF (0.1~1uF all fine) capacitors (C1 to C8), OPTIONAL, recommended.
@@ -101,7 +103,7 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
 * You might need a Bambu 3D printer:
   * Parts are designed to perfectly fit in its 256mm*256mm print bed.
   * Its AMS system works great for multi-color printing.
-  
+* Printing parameters  
   * PLA, PETG, ABS are all OK.
   * The color "Arctic Whisper" works best for the main body.
   * Layer height: 0.2mm
