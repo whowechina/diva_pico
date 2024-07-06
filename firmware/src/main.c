@@ -27,12 +27,10 @@
 #include "config.h"
 #include "cli.h"
 #include "commands.h"
-#include "aime.h"
 
 #include "slider.h"
 #include "rgb.h"
 #include "button.h"
-#include "lzfx.h"
 
 struct __attribute__((packed)) {
     uint16_t buttons; // 16 buttons; see JoystickButtons_t for bit mapping
@@ -120,7 +118,8 @@ static void run_lights()
     uint16_t buttons = button_read();
     for (int i = 0; i < 5; i++) {
         bool pressed = buttons & (1 << i);
-        rgb_button_color(i, pressed ? button_colors[i] : 0x808080);
+        uint32_t color = pressed ? button_colors[i] : 0x808080;
+        rgb_button_color(i, color);
     }
 
     if (now - last_hid_time >= 1000000) {
@@ -151,7 +150,6 @@ static void core0_loop()
         tud_task();
 
         cli_run();
-        aime_update();
     
         save_loop();
         cli_fps_count(0);
@@ -210,8 +208,6 @@ void init()
     rgb_init();
     button_init();
 
-    aime_init(1);
-
     cli_init("diva_pico>", "\n   << Diva Pico Controller >>\n"
                             " https://github.com/whowechina\n\n");
     
@@ -250,34 +246,9 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize)
 {
-    return;
-
     if (report_type == HID_REPORT_TYPE_OUTPUT) {
-        if (report_id == REPORT_ID_LED_SLIDER_16) {
-            rgb_set_brg(0, buffer, bufsize / 3);
-        } else if (report_id == REPORT_ID_LED_SLIDER_15) {
-            rgb_set_brg(16, buffer, bufsize / 3);
-        } else if (report_id == REPORT_ID_LED_TOWER_6) {
-            rgb_set_brg(31, buffer, bufsize / 3);
-        }
+        printf("%d\n", report_id);
         last_hid_time = time_us_64();
         return;
     } 
-    
-    if (report_type == HID_REPORT_TYPE_FEATURE) {
-        if (report_id == REPORT_ID_LED_COMPRESSED) {
-            uint8_t buf[(48 + 45 + 6) * 3];
-            unsigned int olen = sizeof(buf);
-            if (lzfx_decompress(buffer + 1, buffer[0], buf, &olen) == 0) {
-                rgb_set_brg(0, buf, olen / 3);
-            }
-
-            if (!diva_cfg->hid.joy) {
-                diva_cfg->hid.joy = 1;
-                config_changed();
-            }
-        }
-        last_hid_time = time_us_64();
-        return;
-    }
 }

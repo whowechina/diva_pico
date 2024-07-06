@@ -6,10 +6,6 @@
 
 enum {
     REPORT_ID_JOYSTICK = 1,
-    REPORT_ID_LED_SLIDER_16 = 4,
-    REPORT_ID_LED_SLIDER_15 = 5,
-    REPORT_ID_LED_TOWER_6 = 6,
-    REPORT_ID_LED_COMPRESSED = 11,
 };
 
 // because they are missing from tusb_hid.h
@@ -61,58 +57,8 @@ enum {
         HID_REPORT_COUNT(8),                                                   \
         HID_OUTPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                    \
     HID_COLLECTION_END
-        
-//HID_USAGE_PAGE_N(9761, 2), HID_REPORT_COUNT(8), HID_OUTPUT(2),
 
-#define DIVAPICO_LED_HEADER \
-    HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP), HID_USAGE(0x00),                   \
-    HID_COLLECTION(HID_COLLECTION_APPLICATION),                                \
-        HID_REPORT_COUNT(1), HID_REPORT_SIZE(8),                                \
-        HID_INPUT(HID_CONSTANT | HID_VARIABLE | HID_ABSOLUTE)
-
-#define DIVAPICO_LED_FOOTER \
-    HID_COLLECTION_END
-
-// Slider First 16 LEDs (48 rgb zones, BRG order)
-#define DIVAPICO_REPORT_DESC_LED_SLIDER_16                                      \
-        HID_REPORT_ID(REPORT_ID_LED_SLIDER_16)                                 \
-        HID_REPORT_COUNT(48), HID_REPORT_SIZE(8),                              \
-        HID_LOGICAL_MIN(0x00), HID_LOGICAL_MAX_N(0x00ff, 2),                   \
-        HID_USAGE_PAGE(HID_USAGE_PAGE_ORDINAL),                                \
-        HID_USAGE_MIN(1), HID_USAGE_MAX(48),                                   \
-        HID_STRING_MINIMUM(8), HID_STRING_MAXIMUM(55),                         \
-        HID_OUTPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE)
-
-// Slider Remaining 15 LEDs (45 rgb zones, BRG order)
-#define DIVAPICO_REPORT_DESC_LED_SLIDER_15                                      \
-        HID_REPORT_ID(REPORT_ID_LED_SLIDER_15)                                 \
-        HID_REPORT_COUNT(45), HID_REPORT_SIZE(8),                              \
-        HID_LOGICAL_MIN(0x00), HID_LOGICAL_MAX_N(0x00ff, 2),                   \
-        HID_USAGE_PAGE(HID_USAGE_PAGE_ORDINAL),                                \
-        HID_USAGE_MIN(49), HID_USAGE_MAX(93),                                  \
-        HID_STRING_MINIMUM(8), HID_STRING_MAXIMUM(52), /* Delta to previous */ \
-        HID_OUTPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE)
-
-// Tower LEDs (18 rgb zones, BRG order)
-#define DIVAPICO_REPORT_DESC_LED_TOWER_6                                        \
-        HID_REPORT_ID(REPORT_ID_LED_TOWER_6)                                   \
-        HID_REPORT_COUNT(18), HID_REPORT_SIZE(8),                              \
-        HID_LOGICAL_MIN(0x00), HID_LOGICAL_MAX_N(0x00ff, 2),                   \
-        HID_USAGE_PAGE(HID_USAGE_PAGE_ORDINAL),                                \
-        HID_USAGE_MIN(94), HID_USAGE_MAX(111),                                 \
-        HID_STRING_MINIMUM(8), HID_STRING_MAXIMUM(25), /* Delta to previous */ \
-        HID_OUTPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE)
-
-// LEDs Compressed
-#define DIVAPICO_REPORT_DESC_LED_COMPRESSED                                     \
-        HID_REPORT_ID(REPORT_ID_LED_COMPRESSED)                                \
-        HID_USAGE_PAGE(HID_USAGE_PAGE_ORDINAL),                                \
-        HID_USAGE(0x00),                                                      \
-        HID_LOGICAL_MIN(0x00), HID_LOGICAL_MAX_N(0x00ff, 2),                   \
-        HID_REPORT_SIZE(8), HID_REPORT_COUNT(63),                              \
-        HID_FEATURE(HID_DATA | HID_VARIABLE | HID_ABSOLUTE)
-
-#define DIVAPICO_REPORT_DESC_NKRO                                               \
+#define DIVAPICO_REPORT_DESC_NKRO                                              \
     HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                    \
     HID_USAGE(HID_USAGE_DESKTOP_KEYBOARD),                                     \
     HID_COLLECTION(HID_COLLECTION_APPLICATION),                                \

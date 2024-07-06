@@ -78,15 +78,6 @@ uint8_t const desc_hid_report_joy[] = {
     DIVAPICO_REPORT_DESC_JOYSTICK,
 };
 
-uint8_t const desc_hid_report_led[] = {
-    DIVAPICO_LED_HEADER,
-    DIVAPICO_REPORT_DESC_LED_SLIDER_16,
-    DIVAPICO_REPORT_DESC_LED_SLIDER_15,
-    DIVAPICO_REPORT_DESC_LED_TOWER_6,
-    DIVAPICO_REPORT_DESC_LED_COMPRESSED,
-    DIVAPICO_LED_FOOTER
-};
-
 uint8_t const desc_hid_report_nkro[] = {
     DIVAPICO_REPORT_DESC_NKRO,
 };
@@ -100,8 +91,6 @@ uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf)
         case 0:
             return desc_hid_report_joy;
         case 1:
-            return desc_hid_report_led;
-        case 2:
             return desc_hid_report_nkro;
         default:
             return NULL;
@@ -111,29 +100,24 @@ uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf)
 // Configuration Descriptor
 //--------------------------------------------------------------------+
 
-enum { ITF_NUM_JOY, ITF_NUM_LED, ITF_NUM_NKRO,
+enum { ITF_NUM_JOY, ITF_NUM_NKRO,
        ITF_NUM_CLI, ITF_NUM_CLI_DATA,
-       ITF_NUM_AIME, ITF_NUM_AIME_DATA,
        ITF_NUM_TOTAL };
 
 #define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + \
                           TUD_HID_INOUT_DESC_LEN * 1 + \
-                          TUD_HID_DESC_LEN * 2 + \
-                          TUD_CDC_DESC_LEN * 2)
+                          TUD_HID_DESC_LEN * 1 + \
+                          TUD_CDC_DESC_LEN * 1)
 
 #define EPNUM_JOY_OUT 0x01
 #define EPNUM_JOY_IN 0x81
 
-#define EPNUM_LED 0x86
+//#define EPNUM_LED 0x86
 #define EPNUM_KEY 0x87
 
 #define EPNUM_CLI_NOTIF 0x89
 #define EPNUM_CLI_OUT   0x0a
 #define EPNUM_CLI_IN    0x8a
-
-#define EPNUM_AIME_NOTIF 0x8b
-#define EPNUM_AIME_OUT   0x0c
-#define EPNUM_AIME_IN    0x8c
 
 uint8_t const desc_configuration_joy[] = {
     // Config number, interface count, string index, total length, attribute,
@@ -147,19 +131,12 @@ uint8_t const desc_configuration_joy[] = {
                        sizeof(desc_hid_report_joy), EPNUM_JOY_OUT, EPNUM_JOY_IN,
                        CFG_TUD_HID_EP_BUFSIZE, 1),
 
-    TUD_HID_DESCRIPTOR(ITF_NUM_LED, 5, HID_ITF_PROTOCOL_NONE,
-                       sizeof(desc_hid_report_led), EPNUM_LED,
-                       CFG_TUD_HID_EP_BUFSIZE, 4),
-
-    TUD_HID_DESCRIPTOR(ITF_NUM_NKRO, 6, HID_ITF_PROTOCOL_NONE,
+    TUD_HID_DESCRIPTOR(ITF_NUM_NKRO, 5, HID_ITF_PROTOCOL_NONE,
                        sizeof(desc_hid_report_nkro), EPNUM_KEY,
                        CFG_TUD_HID_EP_BUFSIZE, 1),
 
-    TUD_CDC_DESCRIPTOR(ITF_NUM_CLI, 7, EPNUM_CLI_NOTIF,
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CLI, 6, EPNUM_CLI_NOTIF,
                        8, EPNUM_CLI_OUT, EPNUM_CLI_IN, 64),
-
-    TUD_CDC_DESCRIPTOR(ITF_NUM_AIME, 8, EPNUM_AIME_NOTIF,
-                       8, EPNUM_AIME_OUT, EPNUM_AIME_IN, 64),
 };
 
 // Invoked when received GET CONFIGURATION DESCRIPTOR
@@ -177,13 +154,11 @@ uint8_t const* tud_descriptor_configuration_cb(uint8_t index) {
 const char *string_desc_arr[] = {
     (const char[]){0x09, 0x04},  // 0: is supported language is English (0x0409)
     "WHowe"       ,              // 1: Manufacturer
-    "Diva Pico Controller",       // 2: Product
+    "Diva Pico Controller",      // 2: Product
     "123456",                    // 3: Serials, should use chip ID
     "Diva Pico Joystick",
-    "Diva Pico LED",
     "Diva Pico NKRO",
     "Diva Pico CLI Port",
-    "Diva Pico AIME Port",
 };
 
 // Invoked when received GET STRING DESCRIPTOR request
