@@ -14,6 +14,10 @@ Thanks to many respectful guys/companies who made their tools or materials free 
 
 Special thanks to community developers that inspired me and helped me: CrazyRedMachine (https://github.com/CrazyRedMachine).
 
+And also:
+* RP_Silicon_KiCad: https://github.com/HeadBoffin/RP_Silicon_KiCad
+* Switch_Keyboard_Kailh: https://github.com/kiswitch/keyswitch-kicad-library
+
 ## Notes
 This one is relatively easy to build compared with my other projects like IIDX Pico or Teeny. You can check out my other cool projects.
 
