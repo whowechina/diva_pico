@@ -15,6 +15,7 @@
 
 #include "hardware/gpio.h"
 #include "hardware/sync.h"
+#include "hardware/clocks.h"
 #include "hardware/structs/ioqspi.h"
 #include "hardware/structs/sio.h"
 
@@ -103,6 +104,7 @@ static void gen_nkro_report()
 }
 
 static uint64_t last_hid_time = 0;
+static bool motor_running = false;
 
 static void run_lights()
 {
@@ -119,6 +121,9 @@ static void run_lights()
     for (int i = 0; i < 5; i++) {
         bool pressed = buttons & (1 << i);
         uint32_t color = pressed ? button_colors[i] : 0x808080;
+        if (motor_running && (now / 50000 % 2 == 0)) {
+            color = 0;
+        }
         rgb_button_color(i, color);
     }
 
@@ -246,8 +251,11 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize)
 {
+    if (bufsize > 1) {
+        motor_running = !motor_running;
+    }
+
     if (report_type == HID_REPORT_TYPE_OUTPUT) {
-        printf("%d\n", report_id);
         last_hid_time = time_us_64();
         return;
     } 
