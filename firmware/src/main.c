@@ -127,10 +127,11 @@ static void run_lights()
         rgb_button_color(i, color);
     }
 
+    uint32_t phase = (now / 20000) & 0xff;
     if (now - last_hid_time >= 1000000) {
         for (int i = 0; i < 16; i++) {
-            uint32_t color = rgb32_from_hsv(i * 16, 255, 255);
-            rgb_slider_color(i, slider_touched(i) ? color : 0x101010);
+            uint32_t color = rgb32_from_hsv(i * 16 + phase, 255, 96);
+            rgb_slider_color(i, slider_touched(i) ? 0xffffff: color);
         }
     }
 }
@@ -174,8 +175,8 @@ static void update_check()
 {
     const uint8_t pins[] = BUTTON_DEF; // keypad 00 and *
     bool all_pressed = true;
-    for (int i = 0; i < 2; i++) {
-        uint8_t gpio = pins[sizeof(pins) - 2 + i];
+    for (int i = 0; i < 4; i++) {
+        uint8_t gpio = pins[i];
         gpio_init(gpio);
         gpio_set_function(gpio, GPIO_FUNC_SIO);
         gpio_set_dir(gpio, GPIO_IN);
