@@ -38,7 +38,7 @@ struct __attribute__((packed)) {
     uint8_t  HAT;    // HAT switch; one nibble w/ unused nibble
     uint32_t axis;  // slider touch data
     uint8_t  VendorSpec;
-} hid_joy;
+} hid_joy, sent_hid_joy;
 
 struct __attribute__((packed)) {
     uint8_t modifier;
@@ -50,13 +50,17 @@ void report_usb_hid()
     if (tud_hid_ready()) {
         hid_joy.HAT = 0x08;
         hid_joy.VendorSpec = 0;
-        if (diva_cfg->hid.joy) {
-            tud_hid_n_report(0x00, 0, &hid_joy, sizeof(hid_joy));
+        if (diva_cfg->hid.joy &&
+            (memcmp(&hid_joy, &sent_hid_joy, sizeof(hid_joy)) != 0)) {
+                if (tud_hid_report(0, &hid_joy, sizeof(hid_joy))) {
+                    sent_hid_joy = hid_joy;
+                }
         }
         if (diva_cfg->hid.nkro &&
             (memcmp(&hid_nkro, &sent_hid_nkro, sizeof(hid_nkro)) != 0)) {
-            sent_hid_nkro = hid_nkro;
-            tud_hid_n_report(0x02, 0, &sent_hid_nkro, sizeof(sent_hid_nkro));
+                if (tud_hid_n_report(0x02, 0, &hid_nkro, sizeof(hid_nkro))) {
+                    sent_hid_nkro = hid_nkro;
+                }
         }
     }
 }
@@ -152,6 +156,8 @@ static void core1_loop()
 
 static void core0_loop()
 {
+    uint64_t next_frame = time_us_64();
+
     while(1) {
         tud_task();
 
@@ -166,7 +172,9 @@ static void core0_loop()
         gen_joy_report();
         gen_nkro_report();
         report_usb_hid();
-        sleep_us(600);
+
+        next_frame += 1000;
+        sleep_until(next_frame);
     }
 }
 
