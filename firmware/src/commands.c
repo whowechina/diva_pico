@@ -175,9 +175,10 @@ static void handle_hid(int argc, char *argv[])
 static void handle_filter(int argc, char *argv[])
 {
     const char *usage = "Usage: filter <first> <second> [interval]\n"
-                        "    first: First iteration [0..3]\n"
-                        "   second: Second iteration [0..3]\n"
-                        " interval: Interval of second iterations [0..7]\n";
+                        "Adjusts MPR121 noise filtering parameters (see datasheets).\n"
+                        "    first:    First Filter Iterations  (FFI) [0..3]\n"
+                        "    second:   Second Filter Iterations (SFI) [0..3]\n"
+                        "    interval: Electrode Sample Interval (ESI) [0..7]\n";
     if ((argc < 2) || (argc > 3)) {
         printf(usage);
         return;
@@ -205,23 +206,12 @@ static void handle_filter(int argc, char *argv[])
 
 static int8_t *extract_key(const char *param)
 {
-    int len = strlen(param);
-
-    int offset;
-    if (toupper(param[len - 1]) == 'A') {
-        offset = 0;
-    } else if (toupper(param[len - 1]) == 'B') {
-        offset = 1;
-    } else {
-        return NULL;
-    }
-
-    int id = cli_extract_non_neg_int(param, len - 1) - 1;
+    int id = cli_extract_non_neg_int(param, 0) - 1;
     if ((id < 0) || (id > 15)) {
         return NULL;
     }
 
-    return &diva_cfg->sense.keys[id * 2 + offset];
+    return &diva_cfg->sense.keys[id];
 }
 
 static void sense_do_op(int8_t *target, char op)
@@ -245,8 +235,8 @@ static void handle_sense(int argc, char *argv[])
                         "Example:\n"
                         "  >sense +\n"
                         "  >sense -\n"
-                        "  >sense 1A +\n"
-                        "  >sense 13B -\n"
+                        "  >sense 1 +\n"
+                        "  >sense 13 -\n"
                         "  >sense * 0\n";
     if ((argc < 1) || (argc > 2)) {
         printf(usage);
