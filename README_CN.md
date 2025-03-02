@@ -99,6 +99,8 @@ https://discord.gg/M8f2PPQFEA
 ### 导光板
 * 找一个服务切割导光板或者磨砂亚克力板。它是一个完美的矩形，尺寸是 240mm*42mm，厚度为 1.8mm 到 2.0mm，所以你不需要 CAD 文件。  
   <img src="doc/lgp.jpg" width="60%">
+* 一个好的导光板看上去是这样的。  
+  <img src="doc/good_lgp.png" width="80%">
 
 ### 3D 打印
 * 你可能需要一个 Bambu 3D 打印机：

@@ -104,6 +104,8 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
 ### Light Guide Panel
 * Find a service to cut a light guide panel or a frosted acrylic panel. It's a perfect rectangle, the size is 240mm*42mm, 1.8mm to 2.0mm thickness, so you don't need a CAD file.  
   <img src="doc/lgp.jpg" width="60%">
+* This is what a decent light guide panel looks like.  
+  <img src="doc/good_lgp.png" width="80%">
 
 ### 3D Printing
 * You might need a Bambu 3D printer:
