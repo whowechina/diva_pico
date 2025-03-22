@@ -61,8 +61,6 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
 * **MISTAKE: Rushing to replace components when something fails.**  
   Sometimes people prematurely assumes that the Raspberry Pi Pico or other modules are faulty.
   Be aware that desoldering and soldering large SMD components is a challenging task. It carries the risk of damaging the component or the PCB board. Patience and caution are crucial. Look at the schematics and PCB design files and ask help from community first. Questioning the integrity of these components should be your last resort.
-* **MISTAKE: Failing to properly solder the 3 USB pins of the Raspberry Pi Pico.**  
-  These pins are at the bottom side of the PCB. It's a common oversight to either forget to solder them or to leave air bubbles during the process. To avoid this, solder slowly from one side of the hole, using minimal solder wire and a generous amount of flux.
 
 ### PCB
 * Go JLCPCB and make order with the gerber zip file (latest `Production\PCB\diva_main_xxx.zip`), regular FR-4 board, black color, thickness is **1.6mm**.  
