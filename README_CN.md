@@ -1,4 +1,4 @@
-# Diva Pico - Project Diva (初音未来：歌姬计划）计划风格的迷你控制器
+# Diva Pico - Project Diva （初音未来：歌姬计划）计划风格的迷你控制器
 [Click here for the English version of this guide.](README.md)
 
 <img src="doc/main.jpg" width="80%">
@@ -64,7 +64,7 @@ https://discord.gg/M8f2PPQFEA
   请记住，器件绝大部分情况下都是好的，问题可能在焊接上。更换器件会带来额外的风险，比如损坏器件或 PCB 板。耐心和谨慎是至关重要的。首先查看原理图和 PCB 设计文件，并向社区寻求帮助。怀疑器件问题应该是你的最后选择。
 
 ### PCB
-* 前往 JLCPCB 下单，使用最新的 `Production\PCB\diva_main_xxx.zip` 文件，选择常规 FR-4 板材，黑色，厚度为 **1.6mm**。  
+* 找个 PCB 供应商（比如 JLCPCB）下单，使用最新的 `Production\PCB\diva_main_xxx.zip` 文件，选择常规 FR-4 板材，黑色，厚度为 **1.6mm**。  
   <img src="doc/pcb.jpg" width="60%">
 * 1x 树莓派 Pico 或兼容的克隆板。  
   https://www.raspberrypi.com/products/raspberry-pi-pico  

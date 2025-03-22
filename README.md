@@ -63,7 +63,7 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
   Be aware that desoldering and soldering large SMD components is a challenging task. It carries the risk of damaging the component or the PCB board. Patience and caution are crucial. Look at the schematics and PCB design files and ask help from community first. Questioning the integrity of these components should be your last resort.
 
 ### PCB
-* Go JLCPCB and make order with the gerber zip file (latest `Production\PCB\diva_main_xxx.zip`), regular FR-4 board, black color, thickness is **1.6mm**.  
+* Choose a PCB vendor (such as JLCPCB) and place an order with the gerber zip file (latest `Production\PCB\diva_main_xxx.zip`), regular FR-4 board, black color, thickness is **1.6mm**.  
   <img src="doc/pcb.jpg" width="60%">
 
 * 1x Rasberry Pico Pi Pico or pin-to-pin compatible clones.  
