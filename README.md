@@ -101,6 +101,8 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
   <img src="doc/3m_tape_1.jpg" width="25%">
   <img src="doc/3m_tape_2.jpg" width="25%">
 
+* 4x 2mm\*50mm (diameter\*length) steel rods for the button lever structure.
+
 ### Light Guide Panel
 * Find a service to cut a light guide panel or a frosted acrylic panel. It's a perfect rectangle, the size is 240mm*42mm, 1.8mm to 2.0mm thickness, so you don't need a CAD file.  
   <img src="doc/lgp.jpg" width="60%">
@@ -118,15 +120,11 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
   * Support: Yes, always.
 
 * Base: `Production\3D\diva_pico_base.stl`.
-* Cover Base: `Production\3D\diva_pico_cover_base.stl`.
-* Cover: `Production\3D\diva_pico_cover.3mf`, with optional multi-color support.
-* Buttons: `Production\3D\diva_pico_buttons_*_*.3mf`, with multi-color support.  
-  Note that components (the button body, the seat and the logos on it) are mixed in one file, you need to cherry-pick before printing. For example, you need the FixedButton, a proper seat and a logo for one print in the following "diva_pico_buttons_fixed_48".  
+* Cover Base: `Production\3D\diva_pico_support.stl`.
+* Cover: `Production\3D\diva_pico_panel.3mf`, with multi-color support.
+* Buttons: `Production\3D\diva_pico_button_combo.3mf`, with multi-color support.  
+  Note that button components (the button body, the seat and the logos on it) are mixed in one file, you need to cherry-pick before printing.  
   <img src="doc/cherrypick.png" width="40%">
-
-  You have two options for the hinge, one is fixed hinge, the other is rotating hinge. For rotating when, you need a steel 2mm*50mm shaft. Rotating one feels better, but slightly difficult to assemble.    
-  <img src="doc/fix_hinge.jpg" width="40%">
-  <img src="doc/rotating_hinge.jpg" width="40%">
 
 From top to bottom:
 * Cover
@@ -140,10 +138,8 @@ You need **6x M3*10mm regular screws** to fix all things.
 6x silicone anti-slip pads can be applied to the bottom side of the base to provide stability when playing.  
 
 #### Button dome choices
-* Go find a servie, they blow acrylic to domes according to your numbers. The *perfect* numbers are: 42mm outer diameter, 18mm outer height, made from 2mm clear acrylic, no brim. And you need to print 42mm buttons.  
-  <img src="doc/dome_1.jpg" width="60%">
-* Go buy 60mm dome buttons with 48mm diameter dome. I found there're two types, one is perfect and inner diameter is 46mm (the left side one), the other is too tall and inner diameter is 45mm (the right side one). You need to print the buttons according to what dome you get.  
-  <img src="doc/dome_2.jpg" width="60%">
+* Go buy this 60mm dome buttons with 48mm diameter dome. I found this one is perfect, its inner diameter is 46mm. You need to print the buttons according to what dome you get.  
+  <img src="doc/dome_button.jpg" width="40%">
 
 ### Firmware
 * UF2 file is in `Production\Firmware` folder.

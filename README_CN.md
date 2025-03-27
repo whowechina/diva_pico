@@ -97,6 +97,8 @@ https://discord.gg/M8f2PPQFEA
   <img src="doc/3m_tape_1.jpg" width="25%">
   <img src="doc/3m_tape_2.jpg" width="25%">
 
+* 4x 2mm\*50mm（直径\*长度）钢轴用于按钮杠杆结构。
+
 ### 导光板
 * 找一个服务切割导光板或者磨砂亚克力板。它是一个完美的矩形，尺寸是 240mm*42mm，厚度为 1.8mm 到 2.0mm，所以你不需要 CAD 文件。  
   <img src="doc/lgp.jpg" width="60%">
@@ -114,15 +116,11 @@ https://discord.gg/M8f2PPQFEA
   * 支撑：需要。
 
 * 主体：`Production\3D\diva_pico_base.stl`。
-* 盖子底座：`Production\3D\diva_pico_cover_base.stl`。
-* 盖子：`Production\3D\diva_pico_cover.3mf`，支持多色打印。
-* 按钮：`Production\3D\diva_pico_buttons_*_*.3mf`，支持多色打印。  
-  注意，组件（按钮主体，按钮座和上面的图案）都混在一个文件里，你需要在打印前挑选。举例说，你需要在这个文件里选择 FixedButton，一种按钮座和一种图案来一次性打印："diva_pico_buttons_fixed_48.3mf"。  
+* 支撑：`Production\3D\diva_pico_support.stl`。
+* 盖子：`Production\3D\diva_pico_panel.3mf`，支持多色打印。
+* 按钮：`Production\3D\diva_pico_button_combo.3mf`，支持多色打印。  
+  注意，按钮组件（按钮主体，按钮座和上面的图案）都混在一个文件里，你需要在打印前挑选秩组合。  
   <img src="doc/cherrypick.png" width="40%">
-
-  你有两种选择的铰链，一种是固定铰链，另一种是旋转铰链。旋转铰链的手感更好，但装配稍微麻烦一些。  
-  <img src="doc/fix_hinge.jpg" width="40%">
-  <img src="doc/rotating_hinge.jpg" width="40%">
 
 从上到下：
 * 盖子
@@ -135,11 +133,9 @@ https://discord.gg/M8f2PPQFEA
 
 6x 硅胶防滑垫可以贴在底座的底部，以提供游玩时的稳定性。
 
-#### 按钮圆顶选择
-* 淘宝找个服务，他们可以根据你的尺寸要求吹制亚克力圆顶。完美的尺寸是：外径 42mm，外高 18mm，2mm 透明亚克力，无帽檐。这种方案下，你需要打印 42mm 的按钮。  
-  <img src="doc/dome_1.jpg" width="60%">
-* 或者购买现成的 60mm 的圆顶游戏机按钮，内径 46mm（左边的那个）。另一种类型的圆顶按钮太高，内径 45mm（右边的那个）。你需要根据你购买的圆顶按钮来打印按钮。  
-  <img src="doc/dome_2.jpg" width="60%">
+#### 按钮圆顶
+* 购买这种 60mm 的圆顶游戏机按钮，内径 46mm。  
+  <img src="doc/dome_button.jpg" width="40%">
 
 ### 固件
 * 使用最新的 UF2 文件，它在 `Production\Firmware` 文件夹里。
