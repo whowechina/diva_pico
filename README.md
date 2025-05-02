@@ -139,7 +139,7 @@ You need **6x M3*10mm regular screws** to fix all things.
 6x silicone anti-slip pads can be applied to the bottom side of the base to provide stability when playing.  
 
 #### Button dome choices
-* Go buy this 60mm dome buttons with 48mm diameter dome. I found this one is perfect, its inner diameter is 46mm. You need to print the buttons according to what dome you get.  
+* Go buy this 60mm dome buttons with 48mm diameter dome. I found this (only) one is perfect, its inner diameter is 46mm. You need to print the buttons according to what dome you get.  
   <img src="doc/dome_button.jpg" width="40%">
 
 ### Firmware
