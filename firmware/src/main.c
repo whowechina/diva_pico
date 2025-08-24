@@ -47,20 +47,33 @@ struct __attribute__((packed)) {
 
 void report_usb_hid()
 {
-    if (tud_hid_ready()) {
+    static uint64_t last_report_joy = 0;
+    static uint64_t last_report_nkro = 0;
+
+    if (!tud_hid_ready()) {
+        return;
+    }
+
+    uint64_t now = time_us_64();
+
+    if (diva_cfg->hid.joy) {
         hid_joy.HAT = 0x08;
         hid_joy.VendorSpec = 0;
-        if (diva_cfg->hid.joy &&
-            (memcmp(&hid_joy, &sent_hid_joy, sizeof(hid_joy)) != 0)) {
-                if (tud_hid_report(0, &hid_joy, sizeof(hid_joy))) {
-                    sent_hid_joy = hid_joy;
-                }
+        if ((memcmp(&hid_joy, &sent_hid_joy, sizeof(hid_joy)) != 0) ||
+            (now - last_report_joy >= 5000)) {
+            if (tud_hid_report(0, &hid_joy, sizeof(hid_joy))) {
+                sent_hid_joy = hid_joy;
+            }
+            last_report_joy = now;
         }
-        if (diva_cfg->hid.nkro &&
-            (memcmp(&hid_nkro, &sent_hid_nkro, sizeof(hid_nkro)) != 0)) {
-                if (tud_hid_n_report(0x02, 0, &hid_nkro, sizeof(hid_nkro))) {
-                    sent_hid_nkro = hid_nkro;
-                }
+    }
+    if (diva_cfg->hid.nkro) {
+        if ((memcmp(&hid_nkro, &sent_hid_nkro, sizeof(hid_nkro)) != 0) &&
+            (now - last_report_nkro >= 5000)) {
+            if (tud_hid_n_report(0x02, 0, &hid_nkro, sizeof(hid_nkro))) {
+                sent_hid_nkro = hid_nkro;
+            }
+            last_report_nkro = now;
         }
     }
 }
@@ -75,9 +88,9 @@ static void gen_joy_report()
     }
     hid_joy.axis ^= 0x80808080;
     uint16_t button = button_read();
-    hid_joy.buttons = (button & 0x0f) |
-                     ((button & 0x10) << 8) |
-                     ((button & 0x60) << 3);
+    hid_joy.buttons = (button & 0x0f) | // Y A B X
+                     ((button & 0x10) << 8) | // Home
+                     ((button & 0x60) << 3); // - +
 
 }
 
