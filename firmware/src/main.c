@@ -60,7 +60,7 @@ void report_usb_hid()
         hid_joy.HAT = 0x08;
         hid_joy.VendorSpec = 0;
         if ((memcmp(&hid_joy, &sent_hid_joy, sizeof(hid_joy)) != 0) ||
-            (now - last_report_joy >= 5000)) {
+            (now - last_report_joy >= 2000)) {
             if (tud_hid_report(0, &hid_joy, sizeof(hid_joy))) {
                 sent_hid_joy = hid_joy;
             }
@@ -69,12 +69,29 @@ void report_usb_hid()
     }
     if (diva_cfg->hid.nkro) {
         if ((memcmp(&hid_nkro, &sent_hid_nkro, sizeof(hid_nkro)) != 0) &&
-            (now - last_report_nkro >= 5000)) {
+            (now - last_report_nkro >= 2000)) {
             if (tud_hid_n_report(0x02, 0, &hid_nkro, sizeof(hid_nkro))) {
                 sent_hid_nkro = hid_nkro;
             }
             last_report_nkro = now;
         }
+    }
+}
+
+const static uint8_t maps[3][7] = {
+    { 3, 0, 1, 2, 12, 8, 9 },
+    { 0, 3, 2, 1, 12, 8, 9 }, // Steam
+    { 3, 0, 1, 2, 9, 12, 8 }, // Arcade
+};
+
+static void map_buttons()
+{
+    uint16_t button = button_read();
+    const uint8_t *map = maps[diva_cfg->hid.joy_map % 3];
+
+    hid_joy.buttons = 0;
+    for (int i = 0; i < 7; i++) {
+        hid_joy.buttons |= (button & (1 << i)) ? (1 << map[i]) : 0;
     }
 }
 
@@ -87,10 +104,8 @@ static void gen_joy_report()
         }
     }
     hid_joy.axis ^= 0x80808080;
-    uint16_t button = button_read();
-    hid_joy.buttons = (button & 0x0f) | // Y A B X
-                     ((button & 0x10) << 8) | // Home
-                     ((button & 0x60) << 3); // - +
+
+    map_buttons();
 
 }
 
@@ -216,6 +231,22 @@ static void update_check()
     }
 }
 
+static void keymap_check()
+{
+    button_update();
+    uint16_t buttons = button_read();
+    if (buttons == 0x01) {
+        diva_cfg->hid.joy_map = 0;
+    } else if (buttons == 0x02) {
+        diva_cfg->hid.joy_map = 1;
+    } else if ((buttons == 0x04) || (buttons == 0x08)) {
+        diva_cfg->hid.joy_map = 2;
+    } else {
+        return;
+    }
+    config_changed();
+}
+
 void init()
 {
     sleep_ms(50);
@@ -234,6 +265,7 @@ void init()
     slider_init();
     rgb_init();
     button_init();
+    keymap_check();
 
     cli_init("diva_pico>", "\n   << Diva Pico Controller >>\n"
                             " https://github.com/whowechina\n\n");

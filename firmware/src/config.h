@@ -33,8 +33,10 @@ typedef struct __attribute__((packed)) {
         int8_t keys[32];
     } sense;
     struct {
-        uint8_t joy : 4;
-        uint8_t nkro : 4;
+        uint8_t joy : 1;
+        uint8_t joy_map : 3;
+        uint8_t nkro : 1;
+        uint8_t not_used : 3;
     } hid;
 } diva_cfg_t;
 

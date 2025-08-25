@@ -27,6 +27,7 @@ static diva_cfg_t default_cfg = {
      },
     .hid = {
         .joy = 1,
+        .joy_map = 0,
         .nkro = 0,
     },
 };
