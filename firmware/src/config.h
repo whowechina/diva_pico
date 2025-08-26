@@ -11,20 +11,13 @@
 
 typedef struct __attribute__((packed)) {
     struct {
-        uint32_t key_on;
-        uint32_t key_off;
-        uint32_t gap;
+        uint32_t not_used[3];
     } colors;
     struct {
-        uint8_t key;
-        uint8_t gap;
-        uint8_t tof;
+        uint8_t not_used[3];
         uint8_t level;
-    } style;
-    struct {
-        uint8_t offset;
-        uint8_t pitch;
-    } tof;
+    } light;
+    uint8_t not_used2[2];
     struct {
         uint8_t filter;
         int8_t global;

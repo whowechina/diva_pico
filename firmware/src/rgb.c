@@ -116,9 +116,9 @@ static inline uint32_t apply_level(uint32_t color)
     unsigned g = (color >> 8) & 0xff;
     unsigned b = color & 0xff;
 
-    r = r * diva_cfg->style.level / 255;
-    g = g * diva_cfg->style.level / 255;
-    b = b * diva_cfg->style.level / 255;
+    r = r * diva_cfg->light.level / 255;
+    g = g * diva_cfg->light.level / 255;
+    b = b * diva_cfg->light.level / 255;
 
     return r << 16 | g << 8 | b;
 }

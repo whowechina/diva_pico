@@ -12,12 +12,7 @@
 diva_cfg_t *diva_cfg;
 
 static diva_cfg_t default_cfg = {
-    .colors = {
-        .key_on = 0xff0000,
-        .key_off = 0x000000,
-    },
-    .style = {
-        .key = 0,
+    .light = {
         .level = 127,
     },
     .sense = {
@@ -36,15 +31,6 @@ diva_runtime_t *diva_runtime;
 
 static void config_loaded()
 {
-    if (diva_cfg->style.level > 10) {
-        diva_cfg->style.level = default_cfg.style.level;
-        config_changed();
-    }
-    if ((diva_cfg->tof.offset < 40) ||
-        (diva_cfg->tof.pitch < 4) || (diva_cfg->tof.pitch > 50)) {
-        diva_cfg->tof = default_cfg.tof;
-        config_changed();
-    }
     if ((diva_cfg->sense.filter & 0x0f) > 3 ||
         ((diva_cfg->sense.filter >> 4) & 0x0f) > 3) {
         diva_cfg->sense.filter = default_cfg.sense.filter;

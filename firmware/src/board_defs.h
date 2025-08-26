@@ -13,7 +13,7 @@
 #define RGB_PIN 2
 #define RGB_ORDER GRB // or RGB
 
-#define RGB_BUTTON_MAP { 2, 0, 1, 3, 4 }
+#define RGB_BUTTON_MAP { 3, 2, 1, 0, 4 }
 #define BUTTON_DEF { 12, 11, 10, 9, 13, 1, 0} // Main * 4, Start, Aux * 2
 
 #define NKRO_KEYMAP "awsdz2swx3dec4frv5gtb6hyn7jum8ki90olp,."

@@ -17,18 +17,10 @@
 #define SENSE_LIMIT_MAX 9
 #define SENSE_LIMIT_MIN -9
 
-static void disp_colors()
+static void disp_light()
 {
-    printf("[Colors]\n");
-    printf("  Key on: %06lx, off: %06lx\n", 
-           diva_cfg->colors.key_on, diva_cfg->colors.key_off);
-}
-
-static void disp_style()
-{
-    printf("[Style]\n");
-    printf("  Key: %d, Level: %d\n",
-           diva_cfg->style.key, diva_cfg->style.level);
+    printf("[Light]\n");
+    printf("  Level: %d\n", diva_cfg->light.level);
 }
 
 static void disp_sense()
@@ -60,32 +52,28 @@ static void disp_hid()
 
 void handle_display(int argc, char *argv[])
 {
-    const char *usage = "Usage: display [colors|style|tof|sense|hid]\n";
+    const char *usage = "Usage: display [light|sense|hid]\n";
     if (argc > 1) {
         printf(usage);
         return;
     }
 
     if (argc == 0) {
-        disp_colors();
-        disp_style();
+        disp_light();
         disp_sense();
         disp_hid();
         return;
     }
 
-    const char *choices[] = {"colors", "style", "sense", "hid"};
-    switch (cli_match_prefix(choices, 5, argv[0])) {
+    const char *choices[] = {"light", "sense", "hid"};
+    switch (cli_match_prefix(choices, count_of(choices), argv[0])) {
         case 0:
-            disp_colors();
+            disp_light();
             break;
         case 1:
-            disp_style();
-            break;
-        case 2:
             disp_sense();
             break;
-        case 3:
+        case 2:
             disp_hid();
             break;
         default:
@@ -125,9 +113,9 @@ static void handle_level(int argc, char *argv[])
         return;
     }
 
-    diva_cfg->style.level = level;
+    diva_cfg->light.level = level;
     config_changed();
-    disp_style();
+    disp_light();
 }
 
 static void handle_stat(int argc, char *argv[])

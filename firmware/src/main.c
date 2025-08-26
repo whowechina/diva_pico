@@ -142,11 +142,11 @@ static void run_lights()
 {
     uint64_t now = time_us_64();
     uint32_t button_colors[] = { 
-        rgb32(0x70, 0x08, 0x50, false),
-        rgb32(0x80, 0, 0, false),
-        rgb32(0, 0, 0x80, false),
         rgb32(0, 0x80, 0, false),
-        rgb32(0x10, 0x10, 0x10, false)
+        rgb32(0x70, 0x08, 0x50, false),
+        rgb32(0, 0, 0x80, false),
+        rgb32(0x80, 0, 0, false),
+        rgb32(0x70, 0x70, 0x00, false)
     };
 
     uint16_t buttons = button_read();
