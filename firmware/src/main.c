@@ -142,17 +142,17 @@ static void run_lights()
 {
     uint64_t now = time_us_64();
     uint32_t button_colors[] = { 
-        rgb32(0, 0x80, 0, false),
-        rgb32(0x70, 0x08, 0x50, false),
-        rgb32(0, 0, 0x80, false),
-        rgb32(0x80, 0, 0, false),
-        rgb32(0x70, 0x70, 0x00, false)
+        rgb32(0, 0xff, 0, false),
+        rgb32(0xe0, 0x10, 0xe0, false),
+        rgb32(0, 0, 0xff, false),
+        rgb32(0xff, 0, 0, false),
+        rgb32(0xf0, 0x50, 0x00, false)
     };
 
     uint16_t buttons = button_read();
     for (int i = 0; i < 5; i++) {
         bool pressed = buttons & (1 << i);
-        uint32_t color = pressed ? button_colors[i] : 0x808080;
+        uint32_t color = pressed ? button_colors[i] : 0x505050;
         if (motor_running && (now / 50000 % 2 == 0)) {
             color = 0;
         }
