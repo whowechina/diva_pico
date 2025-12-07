@@ -1,0 +1,68 @@
+(footprint "DivaKeyBiasLeft"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 0 -14.3 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "4d1b571a-6738-4483-a586-88528a43ea85")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "DivaKeyBiasLeft"
+		(at 0 14.4 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "a78c44d6-409f-4574-88da-bbfbb5d29d39")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "d88c3df5-3079-4531-a414-0fc0d387f55e")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "3b2ab0cb-1f5b-4946-8390-d44b76b81027")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(pad "1" smd roundrect
+		(at 0 0)
+		(size 9.2 40)
+		(drill
+			(offset -0.1 0)
+		)
+		(layers "F.Cu")
+		(roundrect_rratio 0.01923076923)
+		(uuid "c91a4918-7c7b-44c4-a8fe-15b574de971a")
+	)
+	(embedded_fonts no)
+)
