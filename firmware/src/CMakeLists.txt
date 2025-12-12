@@ -5,7 +5,7 @@ function(make_firmware board board_def)
     pico_sdk_init()
     add_executable(${board}
         main.c slider.c rgb.c button.c save.c config.c commands.c
-        cli.c mpr121.c usb_descriptors.c)
+        cli.c mpr121.c hebtn.c usb_descriptors.c)
     target_compile_definitions(${board} PUBLIC ${board_def})
     pico_enable_stdio_usb(${board} 1)
     pico_enable_stdio_uart(${board} 0)

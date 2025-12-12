@@ -17,6 +17,13 @@
 #define BUTTON_DEF { 12, 11, 10, 9, 13, 1, 0} // Main * 4, Start, Aux * 2
 
 #define NKRO_KEYMAP "awsdz2swx3dec4frv5gtb6hyn7jum8ki90olp,."
+
+/* A0, A1, A2, ... */
+#define HALL_KEY_MUX_ADDRS { 19, 20 }
+#define HALL_KEY_MUX_MAP { 3, 2, 1, 0 }
+#define HALL_KEY_MUX_EN 18
+#define HALL_KEY_ADC_CHN 0
+
 #else
 
 #endif

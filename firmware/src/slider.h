@@ -11,10 +11,11 @@
 
 void slider_init();
 void slider_update();
-bool slider_touched(unsigned key);
+uint16_t slider_zone_num();
+bool slider_touched(unsigned zone);
 const uint16_t *slider_raw();
 void slider_update_config();
-unsigned slider_count(unsigned key);
+unsigned slider_count(unsigned zone);
 void slider_reset_stat();
 
 

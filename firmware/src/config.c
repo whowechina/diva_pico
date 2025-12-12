@@ -25,9 +25,15 @@ static diva_cfg_t default_cfg = {
         .joy_map = 0,
         .nkro = 0,
     },
+    .hall = {
+        .cali_up = { 3600, 3600, 3600, 3600},
+        .cali_down = { 2100, 2100, 2100, 2100},
+        .trig_on = { 24, 24, 24, 24 },
+        .trig_off = { 20, 20, 20, 20 }
+    },
 };
 
-diva_runtime_t *diva_runtime;
+diva_runtime_t diva_runtime;
 
 static void config_loaded()
 {

@@ -32,6 +32,7 @@
 #include "slider.h"
 #include "rgb.h"
 #include "button.h"
+#include "hebtn.h"
 
 struct __attribute__((packed)) {
     uint16_t buttons; // 16 buttons; see JoystickButtons_t for bit mapping
@@ -78,6 +79,11 @@ void report_usb_hid()
     }
 }
 
+static uint16_t unified_button_read()
+{
+    return button_read() | hebtn_read();
+}
+
 const static uint8_t maps[3][7] = {
     { 3, 0, 1, 2, 12, 8, 9 },
     { 0, 3, 2, 1, 12, 8, 9 }, // Steam
@@ -86,7 +92,7 @@ const static uint8_t maps[3][7] = {
 
 static void map_buttons()
 {
-    uint16_t button = button_read();
+    uint16_t button = unified_button_read();
     const uint8_t *map = maps[diva_cfg->hid.joy_map % 3];
 
     hid_joy.buttons = 0;
@@ -98,9 +104,12 @@ static void map_buttons()
 static void gen_joy_report()
 {
     hid_joy.axis = 0;
-    for (int i = 0; i < 16; i++) {
-        if (slider_touched(15 - i)) {
-            hid_joy.axis |= 0x03 << (i * 2);
+
+    int zone_num = slider_zone_num();
+    for (int i = 0; i < zone_num; i++) {
+        if (slider_touched(zone_num - 1 - i)) {
+            uint32_t bits = zone_num > 16 ? (1 << i) : 0x03 << (i * 2);
+            hid_joy.axis |= bits;
         }
     }
     hid_joy.axis ^= 0x80808080;
@@ -149,7 +158,7 @@ static void run_lights()
         rgb32(0xf0, 0x50, 0x00, false)
     };
 
-    uint16_t buttons = button_read();
+    uint16_t buttons = unified_button_read();
     for (int i = 0; i < 5; i++) {
         bool pressed = buttons & (1 << i);
         uint32_t color = pressed ? button_colors[i] : 0x505050;
@@ -159,10 +168,11 @@ static void run_lights()
         rgb_button_color(i, color);
     }
 
-    uint32_t phase = (now / 20000) & 0xff;
+    int zone_num = slider_zone_num();
+    uint32_t phase = ((now >> 10) / zone_num) & 0xff;
     if (now - last_hid_time >= 1000000) {
-        for (int i = 0; i < 16; i++) {
-            uint32_t color = rgb32_from_hsv(i * 16 + phase, 255, 96);
+        for (int i = 0; i < zone_num; i++) {
+            uint32_t color = rgb32_from_hsv(i * 256 / zone_num + phase, 255, 96);
             rgb_slider_color(i, slider_touched(i) ? 0xffffff: color);
         }
     }
@@ -196,6 +206,7 @@ static void core0_loop()
 
         button_update();
         slider_update();
+        hebtn_update();
 
         gen_joy_report();
         gen_nkro_report();
@@ -209,9 +220,10 @@ static void core0_loop()
 /* if certain key pressed when booting, enter update mode */
 static void update_check()
 {
-    const uint8_t pins[] = BUTTON_DEF; // keypad 00 and *
+    const uint8_t pins[] = BUTTON_DEF;
+    int button_num = count_of(pins);
     bool all_pressed = true;
-    for (int i = 0; i < 4; i++) {
+    for (int i = button_num - 2; i < button_num; i++) {
         uint8_t gpio = pins[i];
         gpio_init(gpio);
         gpio_set_function(gpio, GPIO_FUNC_SIO);
@@ -234,7 +246,9 @@ static void update_check()
 static void keymap_check()
 {
     button_update();
-    uint16_t buttons = button_read();
+    hebtn_update();
+
+    uint16_t buttons = unified_button_read();
     if (buttons == 0x01) {
         diva_cfg->hid.joy_map = 0;
     } else if (buttons == 0x02) {
@@ -265,6 +279,9 @@ void init()
     slider_init();
     rgb_init();
     button_init();
+    hebtn_init(diva_cfg->hall.cali_up, diva_cfg->hall.cali_down,
+               diva_cfg->hall.trig_on, diva_cfg->hall.trig_off);
+
     keymap_check();
 
     cli_init("diva_pico>", "\n   << Diva Pico Controller >>\n"
@@ -280,13 +297,6 @@ int main(void)
     core0_loop();
     return 0;
 }
-
-
-struct __attribute__((packed)) {
-    uint16_t buttons;
-    uint8_t  HAT;
-    uint32_t axis;
-} hid_joy_out = {0};
 
 // Invoked when received GET_REPORT control request
 // Application must fill buffer report's content and return its length.

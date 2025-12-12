@@ -20,9 +20,7 @@
 #include "board_defs.h"
 #include "config.h"
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-
-static uint32_t rgb_buf[21]; // 4(Main buttons) + 1(Start button) + 16(Slider)
+static uint32_t rgb_buf[37]; // 4(Main buttons) + 1(Start button) + 32(Max Slider)
 
 static int8_t button_rgb[] = RGB_BUTTON_MAP;
 
@@ -94,18 +92,18 @@ static void drive_led()
     }
     last = now;
 
-    for (int i = 0; i < ARRAY_SIZE(rgb_buf); i++) {
+    for (int i = 0; i < count_of(rgb_buf); i++) {
         pio_sm_put_blocking(pio0, 0, rgb_buf[i] << 8u);
     }
 }
 
 void rgb_set_colors(const uint32_t *colors, unsigned index, size_t num)
 {
-    if (index >= ARRAY_SIZE(rgb_buf)) {
+    if (index >= count_of(rgb_buf)) {
         return;
     }
-    if (index + num > ARRAY_SIZE(rgb_buf)) {
-        num = ARRAY_SIZE(rgb_buf) - index;
+    if (index + num > count_of(rgb_buf)) {
+        num = count_of(rgb_buf) - index;
     }
     memcpy(&rgb_buf[index], colors, num * sizeof(*colors));
 }
@@ -125,14 +123,14 @@ static inline uint32_t apply_level(uint32_t color)
 
 void rgb_button_color(unsigned index, uint32_t color)
 {
-    if (index < ARRAY_SIZE(button_rgb)) {
+    if (index < count_of(button_rgb)) {
         rgb_buf[button_rgb[index]] = apply_level(color);
     }
 }
 
 void rgb_slider_color(unsigned index, uint32_t color)
 {
-    if (index > 16) {
+    if (index > 32) {
         return;
     }
     rgb_buf[5 + index] = apply_level(color);
@@ -140,11 +138,11 @@ void rgb_slider_color(unsigned index, uint32_t color)
 
 void rgb_set_brg(unsigned index, const uint8_t *brg_array, size_t num)
 {
-    if (index >= ARRAY_SIZE(rgb_buf)) {
+    if (index >= count_of(rgb_buf)) {
         return;
     }
-    if (index + num > ARRAY_SIZE(rgb_buf)) {
-        num = ARRAY_SIZE(rgb_buf) - index;
+    if (index + num > count_of(rgb_buf)) {
+        num = count_of(rgb_buf) - index;
     }
     for (int i = 0; i < num; i++) {
         uint8_t b = brg_array[i * 3 + 0];

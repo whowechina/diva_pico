@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "slider.h"
+#include "hebtn.h"
 #include "save.h"
 #include "cli.h"
 
@@ -25,20 +26,37 @@ static void disp_light()
 
 static void disp_sense()
 {
-    printf("[Sense]\n");
+    printf("[Slider]\n");
+    printf("  Zone number: %d\n", slider_zone_num());
     printf("  Filter: %u, %u, %u\n", diva_cfg->sense.filter >> 6,
                                     (diva_cfg->sense.filter >> 4) & 0x03,
                                     diva_cfg->sense.filter & 0x07);
     printf("  Sensitivity (global: %+d):\n", diva_cfg->sense.global);
     printf("    | 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|15|16|\n");
-    printf("  ---------------------------------------------------\n");
-    printf("    |");
-    for (int i = 0; i < 16; i++) {
+    printf("  ---------------------------------------------------");
+    for (int i = 0; i < slider_zone_num(); i++) {
+        if (i % 16 == 0) {
+            printf("\n    |");
+        }
         printf("%+2d|", diva_cfg->sense.keys[i]);
     }
     printf("\n");
     printf("  Debounce (touch, release): %d, %d\n",
            diva_cfg->sense.debounce_touch, diva_cfg->sense.debounce_release);
+}
+
+static void disp_hall()
+{
+    printf("[Hall Button]\n");
+    for (int i = 0; i < hebtn_keynum(); i++) {
+        if (!hebtn_present(i)) {
+            printf("  Key %d: Not Present.\n", i + 1);
+            continue;
+        }
+        printf("  Key %d: %4d->%4d, On: %2d, Off: %2d.\n",
+               i + 1, diva_cfg->hall.cali_up[i], diva_cfg->hall.cali_down[i],
+                diva_cfg->hall.trig_on[i] + 1, diva_cfg->hall.trig_off[i] + 1);
+    }
 }
 
 static void disp_hid()
@@ -52,7 +70,7 @@ static void disp_hid()
 
 void handle_display(int argc, char *argv[])
 {
-    const char *usage = "Usage: display [light|sense|hid]\n";
+    const char *usage = "Usage: display [light|sense|hall|hid]\n";
     if (argc > 1) {
         printf(usage);
         return;
@@ -61,11 +79,12 @@ void handle_display(int argc, char *argv[])
     if (argc == 0) {
         disp_light();
         disp_sense();
+        disp_hall();
         disp_hid();
         return;
     }
 
-    const char *choices[] = {"light", "sense", "hid"};
+    const char *choices[] = {"light", "sense", "hall", "hid"};
     switch (cli_match_prefix(choices, count_of(choices), argv[0])) {
         case 0:
             disp_light();
@@ -74,6 +93,9 @@ void handle_display(int argc, char *argv[])
             disp_sense();
             break;
         case 2:
+            disp_hall();
+            break;
+        case 3:
             disp_hid();
             break;
         default:
@@ -215,7 +237,7 @@ static void handle_filter(int argc, char *argv[])
 static int8_t *extract_key(const char *param)
 {
     int id = cli_extract_non_neg_int(param, 0) - 1;
-    if ((id < 0) || (id > 15)) {
+    if ((id < 0) || (id > slider_zone_num() - 1)) {
         return NULL;
     }
 
@@ -261,7 +283,7 @@ static void handle_sense(int argc, char *argv[])
         sense_do_op(&diva_cfg->sense.global, op[0]);
     } else {
         if (strcmp(argv[0], "*") == 0) {
-            for (int i = 0; i < 32; i++) {
+            for (int i = 0; i < slider_zone_num(); i++) {
                 sense_do_op(&diva_cfg->sense.keys[i], op[0]);
             }
         } else {
@@ -313,18 +335,79 @@ static void handle_debounce(int argc, char *argv[])
 
 static void handle_raw()
 {
-    printf("Key raw readings:\n");
+    printf("Key raw readings:");
     const uint16_t *raw = slider_raw();
-    printf("|");
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < slider_zone_num(); i++) {
+        if (i % 16 == 0) {
+            printf("\n|");
+        }
         printf("%3d|", raw[i]);
     }
-    printf("\n");
-    printf("|");
-    for (int i = 0; i < 16; i++) {
+    printf("\nKey touch status:");
+    for (int i = 0; i < slider_zone_num(); i++) {
+        if (i % 16 == 0) {
+            printf("\n|");
+        }
         printf("%2d |", slider_touched(i));
     }
     printf("\n");
+}
+
+static void handle_calibrate()
+{
+    hebtn_calibrate();
+}
+
+static void handle_trigger(int argc, char *argv[])
+{
+    const char *usage = "Usage: trigger <all|KEY> <ON> <OFF>\n"
+                        "  KEY: 1..%d\n"
+                        "   ON: 1..36, distance for actuation.\n"
+                        "  OFF: 1..36, distance for reset.\n";
+    if (argc != 3) {
+        printf(usage, hebtn_keynum());
+        return;
+    }
+
+    bool all_key = (strncasecmp(argv[0], "all", strlen(argv[0])) == 0);
+    int key = cli_extract_non_neg_int(argv[0], 0) - 1;
+    int on = cli_extract_non_neg_int(argv[1], 0) - 1;
+    int off = cli_extract_non_neg_int(argv[2], 0) - 1;
+    
+    if ((!all_key && (key < 0)) || (key >= hebtn_keynum()) ||
+        (on < 0) || (on > 35) || (off < 0) || (off > 35)) {
+        printf(usage, hebtn_keynum());
+        return;
+    }
+
+    for (int i = 0; i < hebtn_keynum(); i++) {
+        if (all_key || (i == key)) {
+            diva_cfg->hall.trig_on[i] = on;
+            diva_cfg->hall.trig_off[i] = off;
+        }
+    }
+    config_changed();
+
+    disp_hall();
+}
+
+static void handle_debug(int argc, char *argv[])
+{
+    const char *usage = "Usage: debug <sensor>\n";
+    if (argc != 1) {
+        printf(usage);
+        return;
+    }
+    const char *choices[] = {"sensor"};
+    switch (cli_match_prefix(choices, count_of(choices), argv[0])) {
+        case 0:
+            diva_runtime.debug.sensor ^= true;
+            hebtn_debug(diva_runtime.debug.sensor);
+            break;
+        default:
+            printf(usage);
+            break;
+    }
 }
 
 static void handle_save()
@@ -344,11 +427,14 @@ void commands_init()
     cli_register("level", handle_level, "Set LED brightness level.");
     cli_register("stat", handle_stat, "Display or reset statistics.");
     cli_register("hid", handle_hid, "Set HID mode.");
-    cli_register("keymap", handle_keymap, "Set keymap.");
+    cli_register("keymap", handle_keymap, "Set keymap to match game versions.");
     cli_register("filter", handle_filter, "Set pre-filter config.");
     cli_register("sense", handle_sense, "Set sensitivity config.");
     cli_register("debounce", handle_debounce, "Set debounce config.");
     cli_register("raw", handle_raw, "Show key raw readings.");
+    cli_register("calibrate", handle_calibrate, "Calibrate hall sensors.");
+    cli_register("trigger", handle_trigger, "Set trigger distances for keys.");
+    cli_register("debug", handle_debug, "Toggle debug options.");
     cli_register("save", handle_save, "Save config to flash.");
     cli_register("factory", handle_factory_reset, "Reset everything to default.");
 }

@@ -74,7 +74,7 @@ static uint8_t read_reg(uint8_t addr, uint8_t reg)
     return value;
 }
 
-void mpr121_init(uint8_t i2c_addr)
+bool mpr121_init(uint8_t i2c_addr)
 {
     write_reg(i2c_addr, 0x80, 0x63); // Soft reset MPR121 if not reset correctly 
 
@@ -110,6 +110,9 @@ void mpr121_init(uint8_t i2c_addr)
     write_reg(i2c_addr, 0x5D, 0b00101000); // CT=0.5us, TDS=4samples, TDI=16ms 
     write_reg(i2c_addr, 0x5E, 0x80); // Set baseline calibration enabled, baseline loading 5MSB 
 
+    int check_5c = read_reg(i2c_addr, 0x5C);
+    bool present = (check_5c == 0b00010000);
+
     //Auto Configuration 
     write_reg(i2c_addr, 0x7B, 0b00001011); // AFES=6 samples, same as AFES in 0x5C 
     // retry=2b00, no retry, 
@@ -128,38 +131,44 @@ void mpr121_init(uint8_t i2c_addr)
     write_reg(i2c_addr, 0x7E, usl * 0.65),
     write_reg(i2c_addr, 0x7F, usl * 0.9);
 
-    write_reg(i2c_addr, 0x5E, 0x8C); // Run 12 touch, load 5MSB to baseline 
+    write_reg(i2c_addr, 0x5E, 0x8C); // Run 12 touch, load 5MSB to baseline
+
+    return present;
 }
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 
-static void mpr121_read_many(uint8_t addr, uint8_t reg, uint8_t *buf, int num)
+static bool mpr121_read_many(uint8_t addr, uint8_t reg, uint8_t *buf, size_t n)
 {
     i2c_write_blocking_until(I2C_PORT, addr, &reg, 1, true,
                              time_us_64() + IO_TIMEOUT_US);
-    i2c_read_blocking_until(I2C_PORT, addr, buf, num, false,
-                             time_us_64() + IO_TIMEOUT_US * num / 2);
+    int bytes = i2c_read_blocking_until(I2C_PORT, addr, buf, n, false,
+                                        time_us_64() + IO_TIMEOUT_US * n / 2);
+    return bytes == n;
 }
 
-static void mpr121_read_many16(uint8_t addr, uint8_t reg, uint16_t *buf, int num)
+static bool mpr121_read_many16(uint8_t addr, uint8_t reg, uint16_t *buf, size_t n)
 {
-    uint8_t vals[num * 2];
-    mpr121_read_many(addr, reg, vals, num * 2);
-    for (int i = 0; i < num; i++) {
+    uint8_t vals[n * 2];
+    if (!mpr121_read_many(addr, reg, vals, n * 2)){
+        return false;
+    }
+    for (int i = 0; i < n; i++) {
         buf[i] = (vals[i * 2 + 1] << 8) | vals[i * 2];
     }
+    return true;
 }
 
 uint16_t mpr121_touched(uint8_t addr)
 {
-    uint16_t touched;
+    uint16_t touched = 0;
     mpr121_read_many16(addr, MPR121_TOUCH_STATUS_REG, &touched, 1);
     return touched;
 }
 
-void mpr121_raw(uint8_t addr, uint16_t *raw, int num)
+bool mpr121_raw(uint8_t addr, uint16_t *raw, int num)
 {
-    mpr121_read_many16(addr, MPR121_ELECTRODE_FILTERED_DATA_REG, raw, num);
+    return mpr121_read_many16(addr, MPR121_ELECTRODE_FILTERED_DATA_REG, raw, num);
 }
 
 static uint8_t mpr121_stop(uint8_t addr)

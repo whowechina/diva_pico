@@ -17,7 +17,6 @@ typedef struct __attribute__((packed)) {
         uint8_t not_used[3];
         uint8_t level;
     } light;
-    uint8_t not_used2[2];
     struct {
         uint8_t filter;
         int8_t global;
@@ -29,16 +28,26 @@ typedef struct __attribute__((packed)) {
         uint8_t joy : 1;
         uint8_t joy_map : 3;
         uint8_t nkro : 1;
-        uint8_t not_used : 3;
+        uint8_t empty_bits : 3;
+        uint8_t reserved[3];
     } hid;
+    struct {
+        uint16_t cali_up[4];
+        uint16_t cali_down[4];
+        uint8_t trig_on[4];
+        uint8_t trig_off[4];
+    } hall;
 } diva_cfg_t;
 
 typedef struct {
-    uint16_t fps[2];
+    bool diva_plus;
+    struct {
+        bool sensor;
+    } debug;
 } diva_runtime_t;
 
 extern diva_cfg_t *diva_cfg;
-extern diva_runtime_t *diva_runtime;
+extern diva_runtime_t diva_runtime;
 
 void config_init();
 void config_changed(); // Notify the config has changed
