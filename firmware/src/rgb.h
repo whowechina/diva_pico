@@ -22,7 +22,4 @@ void rgb_set_colors(const uint32_t *colors, unsigned index, size_t num);
 void rgb_button_color(unsigned index, uint32_t color);
 void rgb_slider_color(unsigned index, uint32_t color);
 
-/* num of the rgb leds, num*3 bytes in the array */
-void rgb_set_brg(unsigned index, const uint8_t *brg_array, size_t num);
-
 #endif

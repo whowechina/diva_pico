@@ -13,7 +13,7 @@ diva_cfg_t *diva_cfg;
 
 static diva_cfg_t default_cfg = {
     .light = {
-        .level = 127,
+        .level = { 100, 200 },
     },
     .sense = {
         .filter = 0x10,

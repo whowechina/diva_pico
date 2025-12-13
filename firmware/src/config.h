@@ -11,11 +11,11 @@
 
 typedef struct __attribute__((packed)) {
     struct {
-        uint32_t not_used[3];
-    } colors;
-    struct {
-        uint8_t not_used[3];
-        uint8_t level;
+        struct {
+            uint8_t slider;
+            uint8_t button;
+        } level;
+        uint8_t reserved[2];
     } light;
     struct {
         uint8_t filter;

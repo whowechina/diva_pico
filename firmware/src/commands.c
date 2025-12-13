@@ -21,7 +21,8 @@
 static void disp_light()
 {
     printf("[Light]\n");
-    printf("  Level: %d\n", diva_cfg->light.level);
+    printf("  Slider Level: %d\n", diva_cfg->light.level.slider);
+    printf("  Button Level: %d\n", diva_cfg->light.level.button);
 }
 
 static void disp_sense()
@@ -123,19 +124,31 @@ void fps_count(int core)
 
 static void handle_level(int argc, char *argv[])
 {
-    const char *usage = "Usage: level <0..255>\n";
-    if (argc != 1) {
+    const char *usage = "Usage: level <slider|button> <0..255>\n";
+    if (argc != 2) {
         printf(usage);
         return;
     }
 
-    int level = cli_extract_non_neg_int(argv[0], 0);
+    const char *target[] = { "slider", "button" };
+    int match = cli_match_prefix(target, 2, argv[0]);
+    if (match < 0) {
+        printf(usage);
+        return;
+    }
+
+    int level = cli_extract_non_neg_int(argv[1], 0);
     if ((level < 0) || (level > 255)) {
         printf(usage);
         return;
     }
 
-    diva_cfg->light.level = level;
+    if (match == 0) {
+        diva_cfg->light.level.slider = level;
+    } else if (match == 1) {
+        diva_cfg->light.level.button = level;
+    }
+
     config_changed();
     disp_light();
 }

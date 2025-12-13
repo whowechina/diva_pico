@@ -108,15 +108,15 @@ void rgb_set_colors(const uint32_t *colors, unsigned index, size_t num)
     memcpy(&rgb_buf[index], colors, num * sizeof(*colors));
 }
 
-static inline uint32_t apply_level(uint32_t color)
+static inline uint32_t apply_level(uint32_t color, uint8_t level)
 {
     unsigned r = (color >> 16) & 0xff;
     unsigned g = (color >> 8) & 0xff;
     unsigned b = color & 0xff;
 
-    r = r * diva_cfg->light.level / 255;
-    g = g * diva_cfg->light.level / 255;
-    b = b * diva_cfg->light.level / 255;
+    r = r * level / 255;
+    g = g * level / 255;
+    b = b * level / 255;
 
     return r << 16 | g << 8 | b;
 }
@@ -124,7 +124,7 @@ static inline uint32_t apply_level(uint32_t color)
 void rgb_button_color(unsigned index, uint32_t color)
 {
     if (index < count_of(button_rgb)) {
-        rgb_buf[button_rgb[index]] = apply_level(color);
+        rgb_buf[button_rgb[index]] = apply_level(color, diva_cfg->light.level.button);
     }
 }
 
@@ -133,23 +133,7 @@ void rgb_slider_color(unsigned index, uint32_t color)
     if (index > 32) {
         return;
     }
-    rgb_buf[5 + index] = apply_level(color);
-}
-
-void rgb_set_brg(unsigned index, const uint8_t *brg_array, size_t num)
-{
-    if (index >= count_of(rgb_buf)) {
-        return;
-    }
-    if (index + num > count_of(rgb_buf)) {
-        num = count_of(rgb_buf) - index;
-    }
-    for (int i = 0; i < num; i++) {
-        uint8_t b = brg_array[i * 3 + 0];
-        uint8_t r = brg_array[i * 3 + 1];
-        uint8_t g = brg_array[i * 3 + 2];
-        rgb_buf[index + i] = apply_level(rgb32(r, g, b, false));
-    }
+    rgb_buf[5 + index] = apply_level(color, diva_cfg->light.level.slider);
 }
 
 void rgb_init()
