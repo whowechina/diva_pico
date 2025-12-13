@@ -64,8 +64,6 @@ static void disp_hid()
 {
     const char *joy_map[] = {"Switch", "Steam", "Arcade"};
     printf("[HID]\n");
-    printf("  Joy: %s, NKRO: %s.\n", diva_cfg->hid.joy ? "On" : "Off",
-                                     diva_cfg->hid.nkro ? "On" : "Off");
     printf("  Keymap: %s\n", joy_map[diva_cfg->hid.joy_map % 3]);
 }
 
@@ -173,27 +171,6 @@ static void handle_stat(int argc, char *argv[])
     } else {
         printf("Usage: stat [reset]\n");
     }
-}
-
-static void handle_hid(int argc, char *argv[])
-{
-    const char *usage = "Usage: hid <joy|nkro|both>\n";
-    if (argc != 1) {
-        printf(usage);
-        return;
-    }
-
-    const char *choices[] = {"joy", "nkro", "both"};
-    int match = cli_match_prefix(choices, 3, argv[0]);
-    if (match < 0) {
-        printf(usage);
-        return;
-    }
-
-    diva_cfg->hid.joy = ((match == 0) || (match == 2)) ? 1 : 0;
-    diva_cfg->hid.nkro = ((match == 1) || (match == 2)) ? 1 : 0;
-    config_changed();
-    disp_hid();
 }
 
 static void handle_keymap(int argc, char *argv[])
@@ -439,7 +416,6 @@ void commands_init()
     cli_register("display", handle_display, "Display all config.");
     cli_register("level", handle_level, "Set LED brightness level.");
     cli_register("stat", handle_stat, "Display or reset statistics.");
-    cli_register("hid", handle_hid, "Set HID mode.");
     cli_register("keymap", handle_keymap, "Set keymap to match game versions.");
     cli_register("filter", handle_filter, "Set pre-filter config.");
     cli_register("sense", handle_sense, "Set sensitivity config.");

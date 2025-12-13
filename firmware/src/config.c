@@ -21,9 +21,7 @@ static diva_cfg_t default_cfg = {
         .debounce_release = 2,
      },
     .hid = {
-        .joy = 1,
         .joy_map = 0,
-        .nkro = 0,
     },
     .hall = {
         .cali_up = { 3600, 3600, 3600, 3600},

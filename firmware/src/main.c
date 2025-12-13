@@ -41,15 +41,9 @@ struct __attribute__((packed)) {
     uint8_t  VendorSpec;
 } hid_joy, sent_hid_joy;
 
-struct __attribute__((packed)) {
-    uint8_t modifier;
-    uint8_t keymap[15];
-} hid_nkro, sent_hid_nkro;
-
 void report_usb_hid()
 {
     static uint64_t last_report_joy = 0;
-    static uint64_t last_report_nkro = 0;
 
     if (!tud_hid_ready()) {
         return;
@@ -57,25 +51,14 @@ void report_usb_hid()
 
     uint64_t now = time_us_64();
 
-    if (diva_cfg->hid.joy) {
-        hid_joy.HAT = 0x08;
-        hid_joy.VendorSpec = 0;
-        if ((memcmp(&hid_joy, &sent_hid_joy, sizeof(hid_joy)) != 0) ||
-            (now - last_report_joy >= 2000)) {
-            if (tud_hid_report(0, &hid_joy, sizeof(hid_joy))) {
-                sent_hid_joy = hid_joy;
-            }
-            last_report_joy = now;
+    hid_joy.HAT = 0x08;
+    hid_joy.VendorSpec = 0;
+    if ((memcmp(&hid_joy, &sent_hid_joy, sizeof(hid_joy)) != 0) ||
+        (now - last_report_joy >= 2000)) {
+        if (tud_hid_report(0, &hid_joy, sizeof(hid_joy))) {
+            sent_hid_joy = hid_joy;
         }
-    }
-    if (diva_cfg->hid.nkro) {
-        if ((memcmp(&hid_nkro, &sent_hid_nkro, sizeof(hid_nkro)) != 0) &&
-            (now - last_report_nkro >= 2000)) {
-            if (tud_hid_n_report(0x02, 0, &hid_nkro, sizeof(hid_nkro))) {
-                sent_hid_nkro = hid_nkro;
-            }
-            last_report_nkro = now;
-        }
+        last_report_joy = now;
     }
 }
 
@@ -116,32 +99,6 @@ static void gen_joy_report()
 
     map_buttons();
 
-}
-
-const uint8_t keycode_table[128][2] = { HID_ASCII_TO_KEYCODE };
-const uint8_t keymap[38 + 1] = NKRO_KEYMAP; // 32 keys, 6 air keys, 1 terminator
-static void gen_nkro_report()
-{
-    for (int i = 0; i < 32; i++) {
-        uint8_t code = keycode_table[keymap[i]][1];
-        uint8_t byte = code / 8;
-        uint8_t bit = code % 8;
-        if (slider_touched(i)) {
-            hid_nkro.keymap[byte] |= (1 << bit);
-        } else {
-            hid_nkro.keymap[byte] &= ~(1 << bit);
-        }
-    }
-    for (int i = 0; i < 6; i++) {
-        uint8_t code = keycode_table[keymap[32 + i]][1];
-        uint8_t byte = code / 8;
-        uint8_t bit = code % 8;
-        if (hid_joy.buttons & (1 << i)) {
-            hid_nkro.keymap[byte] |= (1 << bit);
-        } else {
-            hid_nkro.keymap[byte] &= ~(1 << bit);
-        }
-    }
 }
 
 static uint64_t last_hid_time = 0;
@@ -209,7 +166,6 @@ static void core0_loop()
         hebtn_update();
 
         gen_joy_report();
-        gen_nkro_report();
         report_usb_hid();
 
         next_frame += 1000;
