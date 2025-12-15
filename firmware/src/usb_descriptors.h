@@ -6,6 +6,10 @@
 
 enum {
     REPORT_ID_JOYSTICK = 1,
+    REPORT_ID_LED_SLIDER_1 = 4,
+    REPORT_ID_LED_SLIDER_2 = 5,
+    REPORT_ID_LED_BUTTON = 6,
+    REPORT_ID_LED_COMPRESSED = 11,
 };
 
 // because they are missing from tusb_hid.h
@@ -58,40 +62,52 @@ enum {
         HID_OUTPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                    \
     HID_COLLECTION_END
 
-#define DIVAPICO_REPORT_DESC_NKRO                                              \
-    HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                    \
-    HID_USAGE(HID_USAGE_DESKTOP_KEYBOARD),                                     \
+#define DIVAPICO_LED_HEADER \
+    HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP), HID_USAGE(0x00),                   \
     HID_COLLECTION(HID_COLLECTION_APPLICATION),                                \
-        /* Modifier */                                                         \
-        HID_REPORT_SIZE(1),                                                    \
-        HID_REPORT_COUNT(8),                                                   \
-        HID_USAGE_PAGE(HID_USAGE_PAGE_KEYBOARD),                               \
-        HID_USAGE_MIN(224),                                                    \
-        HID_USAGE_MAX(231),                                                    \
-        HID_LOGICAL_MIN(0),                                                    \
-        HID_LOGICAL_MAX(1),                                                    \
-        HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                     \
-        /* LED output that we don't care */                                    \
-        HID_REPORT_COUNT(5),                                                   \
-        HID_REPORT_SIZE(1),                                                    \
-        HID_USAGE_PAGE(HID_USAGE_PAGE_LED),                                    \
-        HID_USAGE_MIN(1),                                                      \
-        HID_USAGE_MAX(5),                                                      \
-        HID_OUTPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                    \
-        HID_REPORT_COUNT(1),                                                   \
-        HID_REPORT_SIZE(3),                                                    \
-        HID_OUTPUT(HID_CONSTANT),                                              \
-        /* Full Keyboard Bitmap */                                             \
-        HID_REPORT_SIZE(1),                                                    \
-        HID_REPORT_COUNT(120),                                                 \
-        HID_LOGICAL_MIN(0),                                                    \
-        HID_LOGICAL_MAX(1),                                                    \
-        HID_USAGE_PAGE(HID_USAGE_PAGE_KEYBOARD),                               \
-        HID_USAGE_MIN(0),                                                      \
-        HID_USAGE_MAX(119),                                                    \
-        HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                     \
+        HID_REPORT_COUNT(1), HID_REPORT_SIZE(8),                               \
+        HID_INPUT(HID_CONSTANT | HID_VARIABLE | HID_ABSOLUTE)
+
+#define DIVAPICO_LED_FOOTER \
     HID_COLLECTION_END
 
-//        HID_REPORT_ID(REPORT_ID_NKRO) 
+// Slider First 16 LEDs (48 rgb zones, BRG order)
+#define DIVAPICO_REPORT_DESC_LED_SLIDER_1                                      \
+        HID_REPORT_ID(REPORT_ID_LED_SLIDER_1)                                  \
+        HID_REPORT_COUNT(48), HID_REPORT_SIZE(8),                              \
+        HID_LOGICAL_MIN(0x00), HID_LOGICAL_MAX_N(0x00ff, 2),                   \
+        HID_USAGE_PAGE(HID_USAGE_PAGE_ORDINAL),                                \
+        HID_USAGE_MIN(1), HID_USAGE_MAX(48),                                   \
+        HID_STRING_MINIMUM(8), HID_STRING_MAXIMUM(55),                         \
+        HID_OUTPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE)
+
+// Slider Remaining 16 LEDs (48 rgb zones, BRG order)
+#define DIVAPICO_REPORT_DESC_LED_SLIDER_2                                      \
+        HID_REPORT_ID(REPORT_ID_LED_SLIDER_2)                                  \
+        HID_REPORT_COUNT(48), HID_REPORT_SIZE(8),                              \
+        HID_LOGICAL_MIN(0x00), HID_LOGICAL_MAX_N(0x00ff, 2),                   \
+        HID_USAGE_PAGE(HID_USAGE_PAGE_ORDINAL),                                \
+        HID_USAGE_MIN(49), HID_USAGE_MAX(96),                                  \
+        HID_STRING_MINIMUM(56), HID_STRING_MAXIMUM(103), /* Delta to previous */ \
+        HID_OUTPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE)
+
+// Button LEDs (18 rgb zones, BRG order)
+#define DIVAPICO_REPORT_DESC_LED_BUTTON                                        \
+        HID_REPORT_ID(REPORT_ID_LED_BUTTON)                                    \
+        HID_REPORT_COUNT(4), HID_REPORT_SIZE(8),                               \
+        HID_LOGICAL_MIN(0x00), HID_LOGICAL_MAX_N(0x00ff, 2),                   \
+        HID_USAGE_PAGE(HID_USAGE_PAGE_ORDINAL),                                \
+        HID_USAGE_MIN(97), HID_USAGE_MAX(100),                                 \
+        HID_STRING_MINIMUM(104), HID_STRING_MAXIMUM(107), /* Delta to previous */ \
+        HID_OUTPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE)
+
+// LEDs Compressed
+#define DIVAPICO_REPORT_DESC_LED_COMPRESSED                                     \
+        HID_REPORT_ID(REPORT_ID_LED_COMPRESSED)                                \
+        HID_USAGE_PAGE(HID_USAGE_PAGE_ORDINAL),                                \
+        HID_USAGE(0x00),                                                      \
+        HID_LOGICAL_MIN(0x00), HID_LOGICAL_MAX_N(0x00ff, 2),                   \
+        HID_REPORT_SIZE(8), HID_REPORT_COUNT(63),                              \
+        HID_FEATURE(HID_DATA | HID_VARIABLE | HID_ABSOLUTE)
 
 #endif /* USB_DESCRIPTORS_H_ */

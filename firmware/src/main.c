@@ -33,6 +33,7 @@
 #include "rgb.h"
 #include "button.h"
 #include "hebtn.h"
+#include "lzfx.h"
 
 struct __attribute__((packed)) {
     uint16_t buttons; // 16 buttons; see JoystickButtons_t for bit mapping
@@ -101,12 +102,8 @@ static void gen_joy_report()
 
 }
 
-static uint64_t last_hid_time = 0;
-static bool motor_running = false;
-
 static void run_lights()
 {
-    uint64_t now = time_us_64();
     uint32_t button_colors[] = { 
         rgb32(0, 0xff, 0, false),
         rgb32(0xe0, 0x10, 0xe0, false),
@@ -119,19 +116,27 @@ static void run_lights()
     for (int i = 0; i < 5; i++) {
         bool pressed = buttons & (1 << i);
         uint32_t color = pressed ? button_colors[i] : 0x505050;
-        if (motor_running && (now / 50000 % 2 == 0)) {
-            color = 0;
-        }
         rgb_button_color(i, color);
     }
 
+    uint64_t now = time_us_64();
+
+    static int rainbow_level = 0;
+
     int zone_num = slider_zone_num();
     uint32_t phase = ((now >> 10) / zone_num) & 0xff;
-    if (now - last_hid_time >= 1000000) {
-        for (int i = 0; i < zone_num; i++) {
-            uint32_t color = rgb32_from_hsv(i * 256 / zone_num + phase, 255, 96);
-            rgb_slider_color(i, slider_touched(i) ? 0xffffff: color);
-        }
+    uint32_t touch_bits = slider_touch_bits();
+
+    if ((touch_bits) && (rainbow_level > 80)) {
+        rainbow_level -= (rainbow_level > 168) ? 2 : 1;
+    }
+    if ((!touch_bits) && (rainbow_level < 256)) {
+        rainbow_level += (rainbow_level < 168) ? 2 : 1;
+    }
+
+    for (int i = 0; i < zone_num; i++) {
+        uint32_t color = rgb32_from_hsv(i * 256 / zone_num + phase, 255, rainbow_level / 2);
+        rgb_slider_color(i, touch_bits & (1 << i) ? 0xffffff: color);
     }
 }
 
@@ -271,12 +276,30 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize)
 {
-    if (bufsize > 1) {
-        motor_running = !motor_running;
-    }
 
     if (report_type == HID_REPORT_TYPE_OUTPUT) {
-        last_hid_time = time_us_64();
-        return;
-    } 
+        static uint8_t obuf[48];
+        memcpy(obuf, buffer, bufsize);
+        if (report_id == REPORT_ID_LED_SLIDER_1) {
+            rgb_set_hid_slider(0, 16, obuf);
+        } else if (report_id == REPORT_ID_LED_SLIDER_2) {
+            rgb_set_hid_slider(16, 16, obuf);
+        } else if (report_id == REPORT_ID_LED_BUTTON) {
+            rgb_set_hid_button(obuf);
+        }
+    } else if (report_type == HID_REPORT_TYPE_FEATURE) {
+        if (report_id == REPORT_ID_LED_COMPRESSED) {
+            static uint8_t fbuf[64];
+            memcpy(fbuf, buffer, bufsize);
+            static uint8_t decomp[100];
+            unsigned int olen = sizeof(decomp);
+            if (lzfx_decompress(fbuf + 1, fbuf[0], decomp, &olen) != 0) {
+                return;
+            }
+            if (olen < 96) {
+                return;
+            }
+            rgb_set_hid_slider(0, 32, decomp);
+        }
+    }
 }

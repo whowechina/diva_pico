@@ -78,8 +78,13 @@ uint8_t const desc_hid_report_joy[] = {
     DIVAPICO_REPORT_DESC_JOYSTICK,
 };
 
-uint8_t const desc_hid_report_nkro[] = {
-    DIVAPICO_REPORT_DESC_NKRO,
+uint8_t const desc_hid_report_led[] = {
+    DIVAPICO_LED_HEADER,
+    DIVAPICO_REPORT_DESC_LED_SLIDER_1,
+    DIVAPICO_REPORT_DESC_LED_SLIDER_2,
+    DIVAPICO_REPORT_DESC_LED_BUTTON,
+    DIVAPICO_REPORT_DESC_LED_COMPRESSED,
+    DIVAPICO_LED_FOOTER
 };
 
 // Invoked when received GET HID REPORT DESCRIPTOR
@@ -91,7 +96,7 @@ uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf)
         case 0:
             return desc_hid_report_joy;
         case 1:
-            return desc_hid_report_nkro;
+            return desc_hid_report_led;
         default:
             return NULL;
     }
@@ -100,7 +105,7 @@ uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf)
 // Configuration Descriptor
 //--------------------------------------------------------------------+
 
-enum { ITF_NUM_JOY, ITF_NUM_NKRO,
+enum { ITF_NUM_JOY, ITF_NUM_LED,
        ITF_NUM_CLI, ITF_NUM_CLI_DATA,
        ITF_NUM_TOTAL };
 
@@ -112,8 +117,7 @@ enum { ITF_NUM_JOY, ITF_NUM_NKRO,
 #define EPNUM_JOY_OUT 0x01
 #define EPNUM_JOY_IN 0x81
 
-//#define EPNUM_LED 0x86
-#define EPNUM_KEY 0x87
+#define EPNUM_LED 0x86
 
 #define EPNUM_CLI_NOTIF 0x89
 #define EPNUM_CLI_OUT   0x0a
@@ -131,9 +135,9 @@ uint8_t const desc_configuration_joy[] = {
                        sizeof(desc_hid_report_joy), EPNUM_JOY_OUT, EPNUM_JOY_IN,
                        CFG_TUD_HID_EP_BUFSIZE, 1),
 
-    TUD_HID_DESCRIPTOR(ITF_NUM_NKRO, 5, HID_ITF_PROTOCOL_NONE,
-                       sizeof(desc_hid_report_nkro), EPNUM_KEY,
-                       CFG_TUD_HID_EP_BUFSIZE, 1),
+    TUD_HID_DESCRIPTOR(ITF_NUM_LED, 5, HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_led), EPNUM_LED,
+                       CFG_TUD_HID_EP_BUFSIZE, 4),
 
     TUD_CDC_DESCRIPTOR(ITF_NUM_CLI, 6, EPNUM_CLI_NOTIF,
                        8, EPNUM_CLI_OUT, EPNUM_CLI_IN, 64),
@@ -157,7 +161,7 @@ const char *string_desc_arr[] = {
     "Diva Pico Controller",      // 2: Product
     "123456",                    // 3: Serials, should use chip ID
     "Diva Pico Joystick",
-    "Diva Pico NKRO",
+    "Diva Pico LED",
     "Diva Pico CLI Port",
 };
 
@@ -175,25 +179,12 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid)
     }
     
     const size_t base_num = sizeof(string_desc_arr) / sizeof(string_desc_arr[0]);
-    const char *colors[] = {"Blue", "Red", "Green"};
     char str[64];
 
     if (index < base_num) {
         strcpy(str, string_desc_arr[index]);
-    } else if (index < base_num + 48 + 45) {
-        const char *names[] = {"Key ", "Splitter "};
-        int led = index - base_num;
-        int id = led / 6 + 1;
-        int type = led / 3 % 2;
-        int brg = led % 3;
-        sprintf(str, "%s%02d %s", names[type], id, colors[brg]);
-    } else if (index < base_num + 48 + 45 + 18) {
-        int led = index - base_num - 48 - 45;
-        int id = led / 3 + 1;
-        int brg = led % 3;
-        sprintf(str, "Tower %02d %s", id, colors[brg]);
     } else {
-        sprintf(str, "Unknown %d", index);
+        sprintf(str, "B%02d", index - base_num);
     }
 
     uint8_t chr_count = strlen(str);

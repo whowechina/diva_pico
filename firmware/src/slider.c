@@ -102,6 +102,11 @@ bool slider_touched(unsigned zone)
     return touch_bits & (1 << zone);
 }
 
+uint32_t slider_touch_bits()
+{
+    return touch_bits;
+}
+
 unsigned slider_count(unsigned zone)
 {
     if (zone >= zone_num) {

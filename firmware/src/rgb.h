@@ -22,4 +22,7 @@ void rgb_set_colors(const uint32_t *colors, unsigned index, size_t num);
 void rgb_button_color(unsigned index, uint32_t color);
 void rgb_slider_color(unsigned index, uint32_t color);
 
+void rgb_set_hid_slider(unsigned index, unsigned num, const uint8_t *grb);
+void rgb_set_hid_button(const uint8_t *scale);
+
 #endif
