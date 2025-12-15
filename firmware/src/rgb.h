@@ -18,11 +18,12 @@ void rgb_update();
 uint32_t rgb32(uint32_t r, uint32_t g, uint32_t b, bool gamma_fix);
 uint32_t rgb32_from_hsv(uint8_t h, uint8_t s, uint8_t v);
 
-void rgb_set_colors(const uint32_t *colors, unsigned index, size_t num);
 void rgb_button_color(unsigned index, uint32_t color);
 void rgb_slider_color(unsigned index, uint32_t color);
 
-void rgb_set_hid_slider(unsigned index, unsigned num, const uint8_t *grb);
+void rgb_set_hid_slider(unsigned index, unsigned num, const uint8_t *grb, bool flip);
 void rgb_set_hid_button(const uint8_t *scale);
+
+void rgb_set_half_mode(bool half);
 
 #endif

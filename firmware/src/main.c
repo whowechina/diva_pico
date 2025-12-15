@@ -239,6 +239,8 @@ void init()
 
     slider_init();
     rgb_init();
+    rgb_set_half_mode(slider_zone_num() <= 16);
+
     button_init();
     hebtn_init(diva_cfg->hall.cali_up, diva_cfg->hall.cali_down,
                diva_cfg->hall.trig_on, diva_cfg->hall.trig_off);
@@ -276,14 +278,13 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize)
 {
-
     if (report_type == HID_REPORT_TYPE_OUTPUT) {
         static uint8_t obuf[48];
         memcpy(obuf, buffer, bufsize);
         if (report_id == REPORT_ID_LED_SLIDER_1) {
-            rgb_set_hid_slider(0, 16, obuf);
+            rgb_set_hid_slider(0, 16, obuf, true);
         } else if (report_id == REPORT_ID_LED_SLIDER_2) {
-            rgb_set_hid_slider(16, 16, obuf);
+            rgb_set_hid_slider(16, 16, obuf, true);
         } else if (report_id == REPORT_ID_LED_BUTTON) {
             rgb_set_hid_button(obuf);
         }
@@ -299,7 +300,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
             if (olen < 96) {
                 return;
             }
-            rgb_set_hid_slider(0, 32, decomp);
+            rgb_set_hid_slider(0, 32, decomp, false);
         }
     }
 }

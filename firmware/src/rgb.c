@@ -22,11 +22,16 @@
 
 #define HID_LIGHT_TIMEOUT_MS 1000
 
-static uint32_t main_buf[37]; // 4(Main buttons) + 1(Start button) + 32(Max Slider)
-static uint32_t hid_buf[37];
+static uint32_t button_buf[5]; // 4 buttons + 1 start button
+static uint32_t slider_buf[32]; // 32 slider (max)
+
+static uint32_t hid_button_buf[5];
+static uint32_t hid_slider_buf[32]; // 32 slider (always)
 static uint64_t hid_timeout = 0;
 
 static int8_t button_rgb_map[] = RGB_BUTTON_MAP;
+
+static bool half_mode = false;
 
 #define _MAP_LED(x) _MAKE_MAPPER(x)
 #define _MAKE_MAPPER(x) MAP_LED_##x
@@ -87,6 +92,28 @@ uint32_t rgb32_from_hsv(uint8_t h, uint8_t s, uint8_t v)
     }
 }
 
+static inline uint32_t mix_color(uint32_t a, uint32_t b)
+{
+    uint8_t ar = (a >> 16) & 0xff;
+    uint8_t ag = (a >> 8) & 0xff;
+    uint8_t ab = a & 0xff;
+
+    uint8_t br = (b >> 16) & 0xff;
+    uint8_t bg = (b >> 8) & 0xff;
+    uint8_t bb = b & 0xff;
+
+    uint8_t mr = (ar + br) / 2;
+    uint8_t mg = (ag + bg) / 2;
+    uint8_t mb = (ab + bb) / 2;
+
+    return mr << 16 | mg << 8 | mb;
+}
+
+static inline void pio_send_rgb(uint32_t rgb)
+{
+    pio_sm_put_blocking(pio0, 0, rgb << 8u);
+}
+
 static void drive_led()
 {
     static uint64_t last = 0;
@@ -97,22 +124,25 @@ static void drive_led()
     last = now;
 
     bool use_hid = (hid_timeout > 0) && (now < hid_timeout);
-    const uint32_t *buf = use_hid ? hid_buf : main_buf;
 
-    for (int i = 0; i < count_of(main_buf); i++) {
-        pio_sm_put_blocking(pio0, 0, buf[i] << 8u);
+    // button
+    for (int i = 0; i < count_of(button_buf); i++) {
+        pio_send_rgb(use_hid ? hid_button_buf[i] : button_buf[i]);
     }
-}
 
-void rgb_set_colors(const uint32_t *colors, unsigned index, size_t num)
-{
-    if (index >= count_of(main_buf)) {
-        return;
+    // slider, half or full
+    for (int i = 0; i < (half_mode ? 16 : 32); i++) {
+        if (use_hid) {
+            if (half_mode) {
+                uint32_t rgb = mix_color(hid_slider_buf[i * 2], hid_slider_buf[i * 2 + 1]);
+                pio_send_rgb(rgb);
+            } else {
+                pio_send_rgb(hid_slider_buf[i]);
+            }
+        } else {
+            pio_send_rgb(slider_buf[i]);
+        }
     }
-    if (index + num > count_of(main_buf)) {
-        num = count_of(main_buf) - index;
-    }
-    memcpy(&main_buf[index], colors, num * sizeof(*colors));
 }
 
 static inline uint32_t apply_level(uint32_t color, uint8_t level)
@@ -131,7 +161,7 @@ static inline uint32_t apply_level(uint32_t color, uint8_t level)
 void rgb_button_color(unsigned index, uint32_t color)
 {
     if (index < count_of(button_rgb_map)) {
-        main_buf[button_rgb_map[index]] = apply_level(color, diva_cfg->light.level.button);
+        button_buf[button_rgb_map[index]] = apply_level(color, diva_cfg->light.level.button);
     }
 }
 
@@ -140,7 +170,7 @@ void rgb_slider_color(unsigned index, uint32_t color)
     if (index > 32) {
         return;
     }
-    main_buf[5 + index] = apply_level(color, diva_cfg->light.level.slider);
+    slider_buf[index] = apply_level(color, diva_cfg->light.level.slider);
 }
 
 static inline void update_hid_timeout()
@@ -154,15 +184,16 @@ static inline uint32_t led_rgb(const uint8_t *grb, int index)
     return rgb32(src[1], src[0], src[2], false);
 }
 
-void rgb_set_hid_slider(unsigned index, unsigned num, const uint8_t *grb)
+void rgb_set_hid_slider(unsigned index, unsigned num, const uint8_t *grb, bool flip)
 {
     for (int i = 0; i < num; i++) {
         if (index + i >= 32) {
             return;
         }
-        uint32_t *dest = &hid_buf[5 + index + i];
+        int target = flip ? (31 - (index + i)) : (index + i);
+        uint32_t *dest = &hid_slider_buf[target];
         *dest = apply_level(led_rgb(grb, i), diva_cfg->light.level.slider);
-        }
+    }
 
     update_hid_timeout();
 }
@@ -179,10 +210,10 @@ void rgb_set_hid_button(const uint8_t *scale)
     for (int i = 0; i < 4; i++) {
         int button_led = button_rgb_map[i];
         uint32_t color = apply_level(button_colors[i], scale[i]);
-        hid_buf[button_led] = apply_level(color, diva_cfg->light.level.button);
+        hid_button_buf[button_led] = apply_level(color, diva_cfg->light.level.button);
     }
 
-    hid_buf[4] = main_buf[4]; // HID doesn't have start button light
+    hid_button_buf[4] = button_buf[4]; // HID doesn't have start button light
 
     update_hid_timeout();
 }
@@ -195,6 +226,10 @@ void rgb_init()
     ws2812_program_init(pio0, 0, pio0_offset, RGB_PIN, 800000, false);
 }
 
+void rgb_set_half_mode(bool half)
+{
+    half_mode = half;
+}
 
 void rgb_update()
 {
