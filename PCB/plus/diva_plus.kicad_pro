@@ -461,6 +461,7 @@
       "single_global_label": "ignore",
       "unannotated": "error",
       "unconnected_wire_endpoint": "warning",
+      "undefined_netclass": "error",
       "unit_value_mismatch": "error",
       "unresolved_variable": "error",
       "wire_dangling": "error"
@@ -507,7 +508,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "../../Production/PCB/diva_plus/",
+      "plot": "../../Production/PCB/plus/",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "diva_plus_v1.step",
