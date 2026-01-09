@@ -178,13 +178,13 @@ static inline void update_hid_timeout()
     hid_timeout = time_us_64() + HID_LIGHT_TIMEOUT_MS * 1000;
 }
 
-static inline uint32_t led_rgb(const uint8_t *grb, int index)
+static inline uint32_t led_rgb(const uint8_t *brg, int index)
 {
-    const uint8_t *src = grb + index * 3;
-    return rgb32(src[1], src[0], src[2], false);
+    const uint8_t *src = brg + index * 3;
+    return rgb32(src[1], src[2], src[0], false);
 }
 
-void rgb_set_hid_slider(unsigned index, unsigned num, const uint8_t *grb, bool flip)
+void rgb_set_hid_slider(unsigned index, unsigned num, const uint8_t *brg, bool flip)
 {
     for (int i = 0; i < num; i++) {
         if (index + i >= 32) {
@@ -192,7 +192,7 @@ void rgb_set_hid_slider(unsigned index, unsigned num, const uint8_t *grb, bool f
         }
         int target = flip ? (31 - (index + i)) : (index + i);
         uint32_t *dest = &hid_slider_buf[target];
-        *dest = apply_level(led_rgb(grb, i), diva_cfg->light.level.slider);
+        *dest = apply_level(led_rgb(brg, i), diva_cfg->light.level.slider);
     }
 
     update_hid_timeout();
