@@ -279,7 +279,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            uint16_t bufsize)
 {
     if (report_type == HID_REPORT_TYPE_OUTPUT) {
-        static uint8_t obuf[48];
+        uint8_t obuf[48];
         memcpy(obuf, buffer, bufsize);
         if (report_id == REPORT_ID_LED_SLIDER_1) {
             rgb_set_hid_slider(0, 16, obuf, true);
@@ -290,9 +290,9 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
         }
     } else if (report_type == HID_REPORT_TYPE_FEATURE) {
         if (report_id == REPORT_ID_LED_COMPRESSED) {
-            static uint8_t fbuf[64];
+            uint8_t fbuf[64];
             memcpy(fbuf, buffer, bufsize);
-            static uint8_t decomp[100];
+            uint8_t decomp[100];
             unsigned int olen = sizeof(decomp);
             if (lzfx_decompress(fbuf + 1, fbuf[0], decomp, &olen) != 0) {
                 return;
