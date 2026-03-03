@@ -4,10 +4,10 @@
 <img src="doc/main.jpg" width="80%">
 
 **特点：**
+* 两个尺寸，Diva Pico 和 Diva Pico+。
 * 他很小巧，但按钮手感非常好。
-* 可以作为任天堂 Switch 游戏机的控制器。
-* 16个滑条按键。
-* 丰富的命令行功能。
+* 支持任天堂 Switch、Steam PC 和街机版本。
+* HID 灯光支持街机版本。
 * 所有源文件开放。
 
 感谢许多尊敬的爱好者和公司将他们的工具或材料免费或开源（KiCad，OnShape，InkScape，Raspberry 相关工具, 嘉立创）。

@@ -4,10 +4,10 @@
 <img src="doc/main.jpg" width="80%">
 
 Features:
+* Two sizes, Diva Pico and Diva Pico+.
 * It's small, but the buttons are still decent.
-* Works as a Nintendo Switch controller.
-* 16 slider keys.
-* Command line of rich features.
+* Support Nintendo Switch, Steam PC and Arcade version.
+* HID light for Arcade version.
 * All source files open.
 
 Thanks to many respectful guys/companies who made their tools or materials free or open source (KiCad, OnShape, InkScape, Raspberry things).
