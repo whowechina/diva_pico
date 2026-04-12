@@ -25,6 +25,8 @@
 
 #include <stdio.h>
 
+#include "pico/unique_id.h"
+
 #include "usb_descriptors.h"
 
 #include "tusb.h"
@@ -41,7 +43,7 @@
     (0x4000 | _PID_MAP(CDC, 0) | _PID_MAP(MSC, 1) | _PID_MAP(HID, 2) | \
      _PID_MAP(MIDI, 3) | _PID_MAP(VENDOR, 4))
 
-static bool use_ps4_hid;
+static bool use_ps4_hid = false;
 
 void hid_use_ps4(bool enable)
 {
@@ -204,12 +206,14 @@ uint8_t const* tud_descriptor_configuration_cb(uint8_t index) {
 // String Descriptors
 //--------------------------------------------------------------------+
 
+static char sn_string[32];
+
 // array of pointer to string descriptors
 const char *string_desc_arr[] = {
     (const char[]){0x09, 0x04},  // 0: is supported language is English (0x0409)
     "WHowe"       ,              // 1: Manufacturer
     "Diva Pico Controller",      // 2: Product
-    "123456",                    // 3: Serials, should use chip ID
+    sn_string,                   // 3: Serials, should use chip ID
     "Diva Pico Joystick",
     "Diva Pico LED",
     "Diva Pico CLI Port",
@@ -228,6 +232,13 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid)
         return _desc_str;
     }
     
+    if (index == 3) {
+        pico_unique_board_id_t id;
+        pico_get_unique_board_id(&id);
+        uint64_t id64 = *(uint64_t *)(id.id);
+        sprintf(sn_string, "%lld", id64);
+    }
+
     const size_t base_num = sizeof(string_desc_arr) / sizeof(string_desc_arr[0]);
     char str[64];
 

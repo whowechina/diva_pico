@@ -289,7 +289,6 @@ void init()
 {
     sleep_ms(50);
     set_sys_clock_khz(150000, true);
-    board_init();
 
     update_check();
 
@@ -309,6 +308,7 @@ void init()
     diva_runtime.hid_ps4 = (diva_cfg->hid.joy_map == 3);
     hid_use_ps4(diva_runtime.hid_ps4);
 
+    board_init();
     tusb_init();
     stdio_init_all();
 
