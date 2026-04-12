@@ -35,6 +35,7 @@
 #include "hebtn.h"
 #include "lzfx.h"
 #include "ps4_feat.h"
+#include "slide.h"
 
 struct __attribute__((packed)) {
     uint16_t buttons; // 16 buttons; see JoystickButtons_t for bit mapping
@@ -97,7 +98,7 @@ const static uint8_t maps[4][7] = {
     { 3, 0, 1, 2, 12, 8, 9 },
     { 0, 3, 2, 1, 12, 8, 9 }, // Steam
     { 3, 0, 1, 2, 9, 12, 8 }, // Arcade
-    { 0, 1, 2, 3, 12, 8, 9 }, // PS4
+    { 3, 0, 1, 2, 12, 9, 5 }, // PS4
 };
 
 static uint16_t mapped_buttons;
@@ -124,28 +125,45 @@ static uint32_t touch_axis_bits()
             axis |= bits;
         }
     }
-    return axis ^ 0x80808080;
+    return axis;
+}
+
+static uint32_t touch_mask_raw(void)
+{
+    uint32_t mask = 0;
+    int zone_num = slider_zone_num();
+
+    for (int i = 0; i < zone_num; i++) {
+        if (slider_touched(i)) {
+            mask |= (1u << i);
+        }
+    }
+
+    return mask;
 }
 
 static void gen_ns_report()
 {
-    hid_ns.axis = touch_axis_bits();
+    hid_ns.axis = touch_axis_bits() ^ 0x80808080;
     hid_ns.buttons = mapped_buttons;
 }
 
 static void gen_ps4_report()
 {
     uint16_t ps4_buttons = mapped_buttons;
+    slide_result_t slide_result;
 
-    hid_ps4.left_x = 0x80;
     hid_ps4.left_y = 0x80;
-    hid_ps4.right_x = 0x80;
     hid_ps4.right_y = 0x80;
     hid_ps4.hat_buttons = (ps4_buttons << 4);
     hid_ps4.buttons_11_4 = ps4_buttons >> 4;
     hid_ps4.buttons_counter = ps4_buttons >> 12;
     hid_ps4.trigger_l = 0;
     hid_ps4.trigger_r = 0;
+
+    slide_process(touch_mask_raw(), &slide_result);
+    hid_ps4.left_x = slide_result.left_x;
+    hid_ps4.right_x = slide_result.right_x;
 } 
 
 static void gen_hid_report()
@@ -307,6 +325,9 @@ void init()
 
     diva_runtime.hid_ps4 = (diva_cfg->hid.joy_map == 3);
     hid_use_ps4(diva_runtime.hid_ps4);
+
+    slide_reset();
+    slide_set_latch(100);
 
     board_init();
     tusb_init();
