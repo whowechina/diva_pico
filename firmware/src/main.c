@@ -34,13 +34,27 @@
 #include "button.h"
 #include "hebtn.h"
 #include "lzfx.h"
+#include "ps4_feat.h"
 
 struct __attribute__((packed)) {
     uint16_t buttons; // 16 buttons; see JoystickButtons_t for bit mapping
     uint8_t  HAT;    // HAT switch; one nibble w/ unused nibble
     uint32_t axis;  // slider touch data
     uint8_t  VendorSpec;
-} hid_joy, sent_hid_joy;
+} hid_ns, sent_hid_ns;
+
+struct __attribute__((packed)) {
+    uint8_t left_x;
+    uint8_t left_y;
+    uint8_t right_x;
+    uint8_t right_y;
+    uint8_t hat_buttons;
+    uint8_t buttons_11_4;
+    uint8_t buttons_counter;
+    uint8_t trigger_l;
+    uint8_t trigger_r;
+    uint8_t vendor[54];
+} hid_ps4, sent_hid_ps4;
 
 void report_usb_hid()
 {
@@ -52,14 +66,25 @@ void report_usb_hid()
 
     uint64_t now = time_us_64();
 
-    hid_joy.HAT = 0x08;
-    hid_joy.VendorSpec = 0;
-    if ((memcmp(&hid_joy, &sent_hid_joy, sizeof(hid_joy)) != 0) ||
-        (now - last_report_joy >= 2000)) {
-        if (tud_hid_report(0, &hid_joy, sizeof(hid_joy))) {
-            sent_hid_joy = hid_joy;
+    if (diva_runtime.hid_ps4) {
+        hid_ps4.hat_buttons = (hid_ps4.hat_buttons & 0xF0) | 0x08;
+        if ((memcmp(&hid_ps4, &sent_hid_ps4, sizeof(hid_ps4)) != 0) ||
+            (now - last_report_joy >= 2000)) {
+            if (tud_hid_report(REPORT_ID_JOYSTICK, &hid_ps4, sizeof(hid_ps4))) {
+                sent_hid_ps4 = hid_ps4;
+            }
+            last_report_joy = now;
         }
-        last_report_joy = now;
+    } else {
+        hid_ns.HAT = 0x08;
+        hid_ns.VendorSpec = 0;
+        if ((memcmp(&hid_ns, &sent_hid_ns, sizeof(hid_ns)) != 0) ||
+            (now - last_report_joy >= 2000)) {
+            if (tud_hid_report(0, &hid_ns, sizeof(hid_ns))) {
+                sent_hid_ns = hid_ns;
+            }
+            last_report_joy = now;
+        }
     }
 }
 
@@ -68,38 +93,69 @@ static uint16_t unified_button_read()
     return button_read() | hebtn_read();
 }
 
-const static uint8_t maps[3][7] = {
+const static uint8_t maps[4][7] = {
     { 3, 0, 1, 2, 12, 8, 9 },
     { 0, 3, 2, 1, 12, 8, 9 }, // Steam
     { 3, 0, 1, 2, 9, 12, 8 }, // Arcade
+    { 0, 1, 2, 3, 12, 8, 9 }, // PS4
 };
+
+static uint16_t mapped_buttons;
 
 static void map_buttons()
 {
     uint16_t button = unified_button_read();
-    const uint8_t *map = maps[diva_cfg->hid.joy_map % 3];
+    const uint8_t *map = maps[diva_cfg->hid.joy_map % 4];
 
-    hid_joy.buttons = 0;
+    mapped_buttons = 0;
     for (int i = 0; i < 7; i++) {
-        hid_joy.buttons |= (button & (1 << i)) ? (1 << map[i]) : 0;
+        mapped_buttons |= (button & (1 << i)) ? (1 << map[i]) : 0;
     }
 }
 
-static void gen_joy_report()
+static uint32_t touch_axis_bits()
 {
-    hid_joy.axis = 0;
+    uint32_t axis = 0;
 
     int zone_num = slider_zone_num();
     for (int i = 0; i < zone_num; i++) {
         if (slider_touched(zone_num - 1 - i)) {
             uint32_t bits = zone_num > 16 ? (1 << i) : 0x03 << (i * 2);
-            hid_joy.axis |= bits;
+            axis |= bits;
         }
     }
-    hid_joy.axis ^= 0x80808080;
+    return axis ^ 0x80808080;
+}
 
+static void gen_ns_report()
+{
+    hid_ns.axis = touch_axis_bits();
+    hid_ns.buttons = mapped_buttons;
+}
+
+static void gen_ps4_report()
+{
+    uint16_t ps4_buttons = mapped_buttons;
+
+    hid_ps4.left_x = 0x80;
+    hid_ps4.left_y = 0x80;
+    hid_ps4.right_x = 0x80;
+    hid_ps4.right_y = 0x80;
+    hid_ps4.hat_buttons = (ps4_buttons << 4);
+    hid_ps4.buttons_11_4 = ps4_buttons >> 4;
+    hid_ps4.buttons_counter = ps4_buttons >> 12;
+    hid_ps4.trigger_l = 0;
+    hid_ps4.trigger_r = 0;
+} 
+
+static void gen_hid_report()
+{
     map_buttons();
-
+    if (diva_runtime.hid_ps4) {
+        gen_ps4_report();
+    } else {
+        gen_ns_report();
+    }
 }
 
 static void run_lights()
@@ -170,7 +226,7 @@ static void core0_loop()
         slider_update();
         hebtn_update();
 
-        gen_joy_report();
+        gen_hid_report();
         report_usb_hid();
 
         next_frame += 1000;
@@ -214,11 +270,15 @@ static void keymap_check()
         diva_cfg->hid.joy_map = 0;
     } else if (buttons == 0x02) {
         diva_cfg->hid.joy_map = 1;
-    } else if ((buttons == 0x04) || (buttons == 0x08)) {
+    } else if (buttons == 0x04) {
         diva_cfg->hid.joy_map = 2;
+    } else if (buttons == 0x08) {
+        diva_cfg->hid.joy_map = 3;
     } else {
         return;
     }
+    diva_runtime.hid_ps4 = (diva_cfg->hid.joy_map == 3);
+    hid_use_ps4(diva_runtime.hid_ps4);
     config_changed();
 }
 
@@ -229,9 +289,6 @@ void init()
     board_init();
 
     update_check();
-
-    tusb_init();
-    stdio_init_all();
 
     config_init();
     mutex_init(&core1_io_lock);
@@ -246,6 +303,12 @@ void init()
                diva_cfg->hall.trig_on, diva_cfg->hall.trig_off);
 
     keymap_check();
+
+    diva_runtime.hid_ps4 = (diva_cfg->hid.joy_map == 3);
+    hid_use_ps4(diva_runtime.hid_ps4);
+
+    tusb_init();
+    stdio_init_all();
 
     cli_init("diva_pico>", "\n   << Diva Pico Controller >>\n"
                             " https://github.com/whowechina\n\n");
@@ -268,6 +331,9 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id,
                                hid_report_type_t report_type, uint8_t *buffer,
                                uint16_t reqlen)
 {
+    if (diva_runtime.hid_ps4) {
+        return ps4_feat_get_report(report_id, report_type, buffer, reqlen);
+    }
     printf("Get from USB %d-%d\n", report_id, report_type);
     return 0;
 }
@@ -278,6 +344,11 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize)
 {
+    if (diva_runtime.hid_ps4) {
+        ps4_feat_set_report(report_id, report_type, buffer, bufsize);
+        return;
+    }
+
     if (report_type == HID_REPORT_TYPE_OUTPUT) {
         uint8_t obuf[48];
         memcpy(obuf, buffer, bufsize);

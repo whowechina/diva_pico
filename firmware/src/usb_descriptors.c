@@ -41,10 +41,17 @@
     (0x4000 | _PID_MAP(CDC, 0) | _PID_MAP(MSC, 1) | _PID_MAP(HID, 2) | \
      _PID_MAP(MIDI, 3) | _PID_MAP(VENDOR, 4))
 
+static bool use_ps4_hid;
+
+void hid_use_ps4(bool enable)
+{
+    use_ps4_hid = enable;
+}
+
 //--------------------------------------------------------------------+
 // Device Descriptors
 //--------------------------------------------------------------------+
-tusb_desc_device_t desc_device_joy = {
+tusb_desc_device_t desc_device_ns = {
     .bLength = sizeof(tusb_desc_device_t),
     .bDescriptorType = TUSB_DESC_DEVICE,
     .bcdUSB = 0x0200,
@@ -66,18 +73,43 @@ tusb_desc_device_t desc_device_joy = {
 
     .bNumConfigurations = 0x01};
 
+tusb_desc_device_t desc_device_ps4 = {
+    .bLength = sizeof(tusb_desc_device_t),
+    .bDescriptorType = TUSB_DESC_DEVICE,
+    .bcdUSB = 0x0200,
+    .bDeviceClass = 0x00,
+    .bDeviceSubClass = 0x00,
+    .bDeviceProtocol = 0x00,
+    .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
+
+    .idVendor = DIVAPICO_PS4_VENDOR_ID,
+    .idProduct = DIVAPICO_PS4_PRODUCT_ID,
+    .bcdDevice = 0x0100,
+
+    .iManufacturer = 0x01,
+    .iProduct = 0x02,
+    .iSerialNumber = 0x03,
+
+    .bNumConfigurations = 0x01};
+
 // Invoked when received GET DEVICE DESCRIPTOR
 // Application return pointer to descriptor
 uint8_t const* tud_descriptor_device_cb(void) {
-    return (uint8_t const*)&desc_device_joy;
+    return use_ps4_hid ?
+           (uint8_t const*)&desc_device_ps4 :
+           (uint8_t const*)&desc_device_ns;
 }
 
 //--------------------------------------------------------------------+
 // HID Report Descriptor
 //--------------------------------------------------------------------+
 
-uint8_t const desc_hid_report_joy[] = {
+uint8_t const desc_hid_report_ns[] = {
     DIVAPICO_REPORT_DESC_JOYSTICK,
+};
+
+uint8_t const desc_hid_report_ps4[] = {
+    DIVAPICO_REPORT_DESC_PS4,
 };
 
 uint8_t const desc_hid_report_led[] = {
@@ -96,7 +128,7 @@ uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf)
 {
     switch (itf) {
         case 0:
-            return desc_hid_report_joy;
+            return use_ps4_hid ? desc_hid_report_ps4 : desc_hid_report_ns;
         case 1:
             return desc_hid_report_led;
         default:
@@ -125,7 +157,7 @@ enum { ITF_NUM_JOY, ITF_NUM_LED,
 #define EPNUM_CLI_OUT   0x0a
 #define EPNUM_CLI_IN    0x8a
 
-uint8_t const desc_configuration_joy[] = {
+uint8_t const desc_configuration_ns[] = {
     // Config number, interface count, string index, total length, attribute,
     // power in mA
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN,
@@ -134,7 +166,23 @@ uint8_t const desc_configuration_joy[] = {
     // Interface number, string index, protocol, report descriptor len, EP In
     // address, size & polling interval
     TUD_HID_INOUT_DESCRIPTOR(ITF_NUM_JOY, 4, HID_ITF_PROTOCOL_NONE,
-                       sizeof(desc_hid_report_joy), EPNUM_JOY_OUT, EPNUM_JOY_IN,
+                       sizeof(desc_hid_report_ns), EPNUM_JOY_OUT, EPNUM_JOY_IN,
+                       CFG_TUD_HID_EP_BUFSIZE, 1),
+
+    TUD_HID_DESCRIPTOR(ITF_NUM_LED, 5, HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_led), EPNUM_LED,
+                       CFG_TUD_HID_EP_BUFSIZE, 4),
+
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CLI, 6, EPNUM_CLI_NOTIF,
+                       8, EPNUM_CLI_OUT, EPNUM_CLI_IN, 64),
+};
+
+uint8_t const desc_configuration_ps4[] = {
+    TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN,
+                          TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 200),
+
+    TUD_HID_INOUT_DESCRIPTOR(ITF_NUM_JOY, 4, HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_ps4), EPNUM_JOY_OUT, EPNUM_JOY_IN,
                        CFG_TUD_HID_EP_BUFSIZE, 1),
 
     TUD_HID_DESCRIPTOR(ITF_NUM_LED, 5, HID_ITF_PROTOCOL_NONE,
@@ -149,7 +197,7 @@ uint8_t const desc_configuration_joy[] = {
 // Application return pointer to descriptor
 // Descriptor contents must exist long enough for transfer to complete
 uint8_t const* tud_descriptor_configuration_cb(uint8_t index) {
-    return desc_configuration_joy;
+    return use_ps4_hid ? desc_configuration_ps4 : desc_configuration_ns;
 }
 
 //--------------------------------------------------------------------+

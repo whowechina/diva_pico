@@ -39,6 +39,7 @@ typedef struct __attribute__((packed)) {
 
 typedef struct {
     bool diva_plus;
+    bool hid_ps4;
     struct {
         bool sensor;
     } debug;

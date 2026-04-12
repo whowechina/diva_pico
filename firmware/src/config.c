@@ -31,10 +31,16 @@ static diva_cfg_t default_cfg = {
     },
 };
 
-diva_runtime_t diva_runtime;
+diva_runtime_t diva_runtime = {
+    .hid_ps4 = false,
+};
 
 static void config_loaded()
 {
+    if (diva_cfg->hid.joy_map > 3) {
+        diva_cfg->hid.joy_map = default_cfg.hid.joy_map;
+        config_changed();
+    }
     if ((diva_cfg->sense.filter & 0x0f) > 3 ||
         ((diva_cfg->sense.filter >> 4) & 0x0f) > 3) {
         diva_cfg->sense.filter = default_cfg.sense.filter;

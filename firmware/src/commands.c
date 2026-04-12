@@ -62,9 +62,9 @@ static void disp_hall()
 
 static void disp_hid()
 {
-    const char *joy_map[] = {"Switch", "Steam", "Arcade"};
+    const char *joy_map[] = {"Switch", "Steam", "Arcade", "PS4"};
     printf("[HID]\n");
-    printf("  Keymap: %s\n", joy_map[diva_cfg->hid.joy_map % 3]);
+    printf("  Keymap: %s\n", joy_map[diva_cfg->hid.joy_map % 4]);
 }
 
 void handle_display(int argc, char *argv[])
@@ -175,21 +175,24 @@ static void handle_stat(int argc, char *argv[])
 
 static void handle_keymap(int argc, char *argv[])
 {
-    const char *usage = "Usage: keymap <switch|steam|arcade>\n";
+    const char *usage = "Usage: keymap <switch|steam|arcade|ps4>\n";
     if (argc != 1) {
         printf(usage);
         return;
     }
-    const char *choices[] = {"switch", "steam", "arcade"};
-    int match = cli_match_prefix(choices, 3, argv[0]);
+    const char *choices[] = {"switch", "steam", "arcade", "ps4"};
+    int match = cli_match_prefix(choices, count_of(choices), argv[0]);
     if (match < 0) {
         printf(usage);
         return;
     }
 
     diva_cfg->hid.joy_map = match;
-    config_changed();
+
     disp_hid();
+    save_request(true);
+
+    printf("Please replug the controller to apply the change.\n");
 }
 
 static void handle_filter(int argc, char *argv[])
