@@ -13,7 +13,7 @@
 #include "savedata.h"
 #include "cli.h"
 
-#include "slide.h"
+#include "gesture.h"
 
 #include "usb_descriptors.h"
 
@@ -401,7 +401,7 @@ static void handle_debug(int argc, char *argv[])
             break;
         case 1:
             diva_runtime.debug.slide_cluster ^= true;
-            slide_set_debug_cluster(diva_runtime.debug.slide_cluster);
+            gesture_set_debug_cluster(diva_runtime.debug.slide_cluster);
             break;
         default:
             printf(usage);
@@ -414,7 +414,7 @@ void cli_ctrl_c_cb(void)
     diva_runtime.debug.sensor = false;
     diva_runtime.debug.slide_cluster = false;
     hebtn_debug(false);
-    slide_set_debug_cluster(false);
+    gesture_set_debug_cluster(false);
 }
 
 static void handle_save()

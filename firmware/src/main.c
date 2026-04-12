@@ -35,7 +35,7 @@
 #include "hebtn.h"
 #include "lzfx.h"
 #include "ps4_feat.h"
-#include "slide.h"
+#include "gesture.h"
 
 struct __attribute__((packed)) {
     uint16_t buttons; // 16 buttons; see JoystickButtons_t for bit mapping
@@ -151,8 +151,6 @@ static void gen_ns_report()
 static void gen_ps4_report()
 {
     uint16_t ps4_buttons = mapped_buttons;
-    slide_result_t slide_result;
-
     hid_ps4.left_y = 0x80;
     hid_ps4.right_y = 0x80;
     hid_ps4.hat_buttons = (ps4_buttons << 4);
@@ -161,9 +159,7 @@ static void gen_ps4_report()
     hid_ps4.trigger_l = 0;
     hid_ps4.trigger_r = 0;
 
-    slide_process(touch_mask_raw(), &slide_result);
-    hid_ps4.left_x = slide_result.left_x;
-    hid_ps4.right_x = slide_result.right_x;
+    gesture_process(touch_mask_raw(), &hid_ps4.left_x, &hid_ps4.right_x);
 } 
 
 static void gen_hid_report()
@@ -326,8 +322,8 @@ void init()
     diva_runtime.hid_ps4 = (diva_cfg->hid.joy_map == 3);
     hid_use_ps4(diva_runtime.hid_ps4);
 
-    slide_reset();
-    slide_set_latch(100);
+    gesture_reset();
+    gesture_set_latch(100);
 
     board_init();
     tusb_init();
