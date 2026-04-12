@@ -22,8 +22,11 @@ static const char *commands[MAX_COMMANDS];
 static const char *helps[MAX_COMMANDS];
 static cmd_handler_t handlers[MAX_COMMANDS];
 static int max_cmd_len = 0;
-
 static int num_commands = 0;
+
+__attribute__((weak)) void cli_ctrl_c_cb(void)
+{
+}
 
 uint64_t board_id_64()
 {
@@ -177,6 +180,13 @@ void cli_run()
     }
     int c = getchar_timeout_us(0);
     if (c < 0) {
+        return;
+    }
+    
+    if (c == 0x03) { /* Ctrl+C */
+        cli_ctrl_c_cb();
+        cmd_len = 0;
+        printf("^C\n%s", cli_prompt);
         return;
     }
 

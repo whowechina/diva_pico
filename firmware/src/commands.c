@@ -13,6 +13,8 @@
 #include "savedata.h"
 #include "cli.h"
 
+#include "slide.h"
+
 #include "usb_descriptors.h"
 
 #define SENSE_LIMIT_MAX 9
@@ -386,21 +388,33 @@ static void handle_trigger(int argc, char *argv[])
 
 static void handle_debug(int argc, char *argv[])
 {
-    const char *usage = "Usage: debug <sensor>\n";
+    const char *usage = "Usage: debug <sensor|slider_cluster|xxxx>\n";
     if (argc != 1) {
         printf(usage);
         return;
     }
-    const char *choices[] = {"sensor"};
+    const char *choices[] = {"sensor", "slider_cluster"};
     switch (cli_match_prefix(choices, count_of(choices), argv[0])) {
         case 0:
             diva_runtime.debug.sensor ^= true;
             hebtn_debug(diva_runtime.debug.sensor);
             break;
+        case 1:
+            diva_runtime.debug.slide_cluster ^= true;
+            slide_set_debug_cluster(diva_runtime.debug.slide_cluster);
+            break;
         default:
             printf(usage);
             break;
     }
+}
+
+void cli_ctrl_c_cb(void)
+{
+    diva_runtime.debug.sensor = false;
+    diva_runtime.debug.slide_cluster = false;
+    hebtn_debug(false);
+    slide_set_debug_cluster(false);
 }
 
 static void handle_save()

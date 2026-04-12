@@ -42,6 +42,7 @@ typedef struct {
     bool hid_ps4;
     struct {
         bool sensor;
+        bool slide_cluster;
     } debug;
 } diva_runtime_t;
 
