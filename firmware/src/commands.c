@@ -12,6 +12,7 @@
 #include "hebtn.h"
 #include "savedata.h"
 #include "cli.h"
+#include "ps4key.h"
 
 #include "gesture.h"
 
@@ -428,6 +429,36 @@ static void handle_factory_reset()
     printf("Factory reset done.\n");
 }
 
+static void handle_ps4key(int argc, char *argv[])
+{
+    static ps4key_data_t ps4key_data;
+    const char *usage = "Usage: ps4key <serialized_key|clear>\n";
+
+    if (argc != 1) {
+        printf(usage);
+        return;
+    }
+
+    if (strncasecmp(argv[0], "clear", strlen(argv[0])) == 0) {
+        ps4key_clear_data(&ps4key_data);
+        savedata_clear_global();
+        printf("PS4 key data cleared.\n");
+        return;
+    }
+
+    const char *error = NULL;
+    if (!ps4key_parse_text(argv[0], &ps4key_data, &error)) {
+        printf("PS4 key import failed: %s\n", error ? error : "Unknown error.");
+        return;
+    }
+
+    savedata_write_global(&ps4key_data, sizeof(ps4key_data));
+    printf("PS4 key stored: serial=%s pem=%u bytes sig=%u bytes.\n",
+            ps4key_data.serial,
+            (unsigned)ps4key_data.pem_len,
+            (unsigned)ps4key_data.sig_len);
+}
+
 void commands_init()
 {
     cli_register("display", handle_display, "Display all config.");
@@ -443,4 +474,5 @@ void commands_init()
     cli_register("debug", handle_debug, "Toggle debug options.");
     cli_register("save", handle_save, "Save config to flash.");
     cli_register("factory", handle_factory_reset, "Reset everything to default.");
+    cli_register("ps4key", handle_ps4key, "Import or clear serialized PS4 key data.");
 }

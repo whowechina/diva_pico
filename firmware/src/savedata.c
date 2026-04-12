@@ -36,6 +36,8 @@ static uint32_t my_magic = 0xcafecafe;
 #define GLOBAL_SECTOR_SIZE (GLOBAL_SECTOR_NUM * FLASH_SECTOR_SIZE)
 #define GLOBAL_SECTOR_OFFSET (SAVE_SECTOR_OFFSET - GLOBAL_SECTOR_SIZE)
 
+static uint8_t global_write_buffer[GLOBAL_SECTOR_SIZE];
+
 typedef struct __attribute ((packed)) {
     uint32_t magic;
     uint8_t data[FLASH_PAGE_SIZE - 4];
@@ -187,8 +189,27 @@ static void do_write_global(void *param)
 void savedata_write_global(const void *data, size_t size)
 {
     static uintptr_t param[2];
-    param[0] = (uintptr_t)data;
-    param[1] = size;
+    if (data == NULL) {
+        return;
+    }
+
+    if (size > GLOBAL_SECTOR_SIZE) {
+        size = GLOBAL_SECTOR_SIZE;
+    }
+
+    size_t padded = size;
+    if ((padded % FLASH_PAGE_SIZE) != 0) {
+        padded += FLASH_PAGE_SIZE - (padded % FLASH_PAGE_SIZE);
+    }
+    if (padded == 0) {
+        padded = FLASH_PAGE_SIZE;
+    }
+
+    memset(global_write_buffer, 0xff, sizeof(global_write_buffer));
+    memcpy(global_write_buffer, data, size);
+
+    param[0] = (uintptr_t)global_write_buffer;
+    param[1] = padded;
 
     printf("Program Global %8x ", GLOBAL_SECTOR_OFFSET);
     if (flash_safe_execute(do_write_global, param, 1000) != PICO_OK) {
@@ -196,4 +217,15 @@ void savedata_write_global(const void *data, size_t size)
     } else {
         printf("Done.\n");
     }
+}
+
+void savedata_clear_global()
+{
+    memset(global_write_buffer, 0xff, sizeof(global_write_buffer));
+    savedata_write_global(global_write_buffer, FLASH_PAGE_SIZE);
+}
+
+size_t savedata_global_size()
+{
+    return GLOBAL_SECTOR_SIZE;
 }

@@ -22,5 +22,7 @@ void savedata_request(bool immediately);
 
 void savedata_read_global(size_t offset, void *data, size_t size);
 void savedata_write_global(const void *data, size_t size);
+void savedata_clear_global();
+size_t savedata_global_size();
 
 #endif

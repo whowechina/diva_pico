@@ -123,7 +123,7 @@ int cli_extract_non_neg_int(const char *param, int len)
     return result;
 }
 
-static char cmd_buf[256];
+static char cmd_buf[102400];
 static int cmd_len = 0;
 
 static void process_cmd()
