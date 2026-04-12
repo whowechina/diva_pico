@@ -10,7 +10,7 @@
 #include "config.h"
 #include "slider.h"
 #include "hebtn.h"
-#include "save.h"
+#include "savedata.h"
 #include "cli.h"
 
 #include "usb_descriptors.h"
@@ -190,7 +190,7 @@ static void handle_keymap(int argc, char *argv[])
     diva_cfg->hid.joy_map = match;
 
     disp_hid();
-    save_request(true);
+    savedata_request(true);
 
     printf("Please replug the controller to apply the change.\n");
 }
@@ -405,7 +405,7 @@ static void handle_debug(int argc, char *argv[])
 
 static void handle_save()
 {
-    save_request(true);
+    savedata_request(true);
 }
 
 static void handle_factory_reset()

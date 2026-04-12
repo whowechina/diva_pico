@@ -24,7 +24,7 @@
 
 #include "board_defs.h"
 
-#include "save.h"
+#include "savedata.h"
 #include "config.h"
 #include "cli.h"
 #include "commands.h"
@@ -196,15 +196,18 @@ static void run_lights()
     }
 }
 
-static mutex_t core1_io_lock;
+static void core1_init()
+{
+    flash_safe_execute_core_init();
+}
+
 static void core1_loop()
 {
+    core1_init();
+
     while (1) {
-        if (mutex_try_enter(&core1_io_lock, NULL)) {
-            run_lights();
-            rgb_update();
-            mutex_exit(&core1_io_lock);
-        }
+        run_lights();
+        rgb_update();
         cli_fps_count(1);
         sleep_us(700);
     }
@@ -219,7 +222,7 @@ static void core0_loop()
 
         cli_run();
     
-        save_loop();
+        savedata_loop();
         cli_fps_count(0);
 
         button_update();
@@ -291,8 +294,7 @@ void init()
     update_check();
 
     config_init();
-    mutex_init(&core1_io_lock);
-    save_init(0xca44cafe, &core1_io_lock);
+    savedata_init(0xca44cafe);
 
     slider_init();
     rgb_init();

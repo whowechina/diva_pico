@@ -5,21 +5,20 @@
  * Config is stored in last sector of flash
  */
 
-#include "save.h"
+#include "savedata.h"
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include <memory.h>
 
 
-#include "bsp/board.h"
 #include "pico/bootrom.h"
 #include "pico/stdio.h"
 
 #include "hardware/flash.h"
 #include "pico/multicore.h"
-#include "pico/unique_id.h"
 
 static struct {
     size_t size;
@@ -33,6 +32,9 @@ static uint32_t my_magic = 0xcafecafe;
 #define SAVE_TIMEOUT_US 5000000
 
 #define SAVE_SECTOR_OFFSET (PICO_FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE)
+#define GLOBAL_SECTOR_NUM 2
+#define GLOBAL_SECTOR_SIZE (GLOBAL_SECTOR_NUM * FLASH_SECTOR_SIZE)
+#define GLOBAL_SECTOR_OFFSET (SAVE_SECTOR_OFFSET - GLOBAL_SECTOR_SIZE)
 
 typedef struct __attribute ((packed)) {
     uint32_t magic;
@@ -47,26 +49,25 @@ static int data_page = -1;
 static bool requesting_save = false;
 static uint64_t requesting_time = 0;
 
-static mutex_t *io_lock;
 
-static void save_program()
+static void do_write(void *param)
 {
-    old_data = new_data;
-
-    data_page = (data_page + 1) % (FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE);
-    printf("\nProgram Flash %d %8lx\n", data_page, old_data.magic);
-    if (mutex_enter_timeout_us(io_lock, 100000)) {
-        sleep_ms(10); /* wait for all io operations to finish */
-        uint32_t ints = save_and_disable_interrupts();
         if (data_page == 0) {
             flash_range_erase(SAVE_SECTOR_OFFSET, FLASH_SECTOR_SIZE);
         }
         flash_range_program(SAVE_SECTOR_OFFSET + data_page * FLASH_PAGE_SIZE,
                             (uint8_t *)&old_data, FLASH_PAGE_SIZE);
-        restore_interrupts(ints);
-        mutex_exit(io_lock);
+}
+
+static void save_program()
+{
+    old_data = new_data;
+    data_page = (data_page + 1) % (FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE);
+    printf("\nProgram Save %d %8lx ", data_page, old_data.magic);
+    if (flash_safe_execute(do_write, NULL, 1000) != PICO_OK) {
+        printf("Failed!\n");
     } else {
-        printf("Program Flash Failed.\n");
+        printf("Done.\n");
     }
 }
 
@@ -94,7 +95,7 @@ static void save_load()
 
     if (data_page < 0) {
         load_default();
-        save_request(false);
+        savedata_request(false);
         return;
     }
 
@@ -110,37 +111,15 @@ static void save_loaded()
     }
 }
 
-static union __attribute__((packed)) {
-    pico_unique_board_id_t id;
-    struct {
-        uint32_t id32h;
-        uint32_t id32l;
-    };
-    uint64_t id64;
-} board_id;
-
-uint32_t board_id_32()
-{
-    pico_get_unique_board_id(&board_id.id);
-    return board_id.id32h ^ board_id.id32l;
-}
-
-uint64_t board_id_64()
-{
-    pico_get_unique_board_id(&board_id.id);
-    return board_id.id64;
-}
-
-void save_init(uint32_t magic, mutex_t *locker)
+void savedata_init(uint32_t magic)
 {
     my_magic = magic;
-    io_lock = locker;
     save_load();
-    save_loop();
+    savedata_loop();
     save_loaded();
 }
 
-void save_loop()
+void savedata_loop()
 {
     if (requesting_save && (time_us_64() - requesting_time > SAVE_TIMEOUT_US)) {
         requesting_save = false;
@@ -152,10 +131,16 @@ void save_loop()
     }
 }
 
-void *save_alloc(size_t size, void *def, void (*after_load)())
+void *savedata_alloc(size_t size, void *def, void (*after_load)())
 {
+    size_t offset = 0;
+    if (module_num > 0) {
+        offset = modules[module_num - 1].offset + modules[module_num - 1].size;
+    }
+    if (offset + size > sizeof(default_data.data)) {
+        return NULL;
+    }
     modules[module_num].size = size;
-    size_t offset = module_num > 0 ? modules[module_num - 1].offset + size : 0;
     modules[module_num].offset = offset;
     modules[module_num].after_load = after_load;
     module_num++;
@@ -163,7 +148,7 @@ void *save_alloc(size_t size, void *def, void (*after_load)())
     return new_data.data + offset;
 }
 
-void save_request(bool immediately)
+void savedata_request(bool immediately)
 {
     if (!requesting_save) {
         printf("Save requested.\n");
@@ -173,6 +158,42 @@ void save_request(bool immediately)
     }
     if (immediately) {
         requesting_time = 0;
-        save_loop();
+        savedata_loop();
+    }
+}
+
+
+void savedata_read_global(size_t offset, void *data, size_t size)
+{
+    if ((data == NULL) || (size == 0) || (offset >= GLOBAL_SECTOR_SIZE)) {
+        return;
+    }
+    if (size > GLOBAL_SECTOR_SIZE - offset) {
+        size = GLOBAL_SECTOR_SIZE - offset;
+    }
+    memcpy(data, (void *)(XIP_BASE + GLOBAL_SECTOR_OFFSET + offset), size);
+}
+
+static void do_write_global(void *param)
+{
+    uintptr_t *p = (uintptr_t *)param;
+    const uint8_t *data = (const uint8_t *)p[0];
+    size_t size = (size_t)p[1];
+
+    flash_range_erase(GLOBAL_SECTOR_OFFSET, GLOBAL_SECTOR_NUM * FLASH_SECTOR_SIZE);
+    flash_range_program(GLOBAL_SECTOR_OFFSET, data, size);
+}
+
+void savedata_write_global(const void *data, size_t size)
+{
+    static uintptr_t param[2];
+    param[0] = (uintptr_t)data;
+    param[1] = size;
+
+    printf("Program Global %8x ", GLOBAL_SECTOR_OFFSET);
+    if (flash_safe_execute(do_write_global, param, 1000) != PICO_OK) {
+        printf("Failed!\n");
+    } else {
+        printf("Done.\n");
     }
 }

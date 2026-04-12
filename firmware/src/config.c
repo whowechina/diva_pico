@@ -7,7 +7,7 @@
  */
 
 #include "config.h"
-#include "save.h"
+#include "savedata.h"
 
 diva_cfg_t *diva_cfg;
 
@@ -66,16 +66,16 @@ static void config_loaded()
 
 void config_changed()
 {
-    save_request(false);
+    savedata_request(false);
 }
 
 void config_factory_reset()
 {
     *diva_cfg = default_cfg;
-    save_request(true);
+    savedata_request(true);
 }
 
 void config_init()
 {
-    diva_cfg = (diva_cfg_t *)save_alloc(sizeof(*diva_cfg), &default_cfg, config_loaded);
+    diva_cfg = (diva_cfg_t *)savedata_alloc(sizeof(*diva_cfg), &default_cfg, config_loaded);
 }

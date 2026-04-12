@@ -7,8 +7,9 @@
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
 #include "pico/bootrom.h"
+#include "pico/unique_id.h"
+
 #include "cli.h"
-#include "save.h"
 
 #define MAX_COMMANDS 32
 #define MAX_PARAMETERS 10
@@ -23,6 +24,13 @@ static cmd_handler_t handlers[MAX_COMMANDS];
 static int max_cmd_len = 0;
 
 static int num_commands = 0;
+
+uint64_t board_id_64()
+{
+    pico_unique_board_id_t id;
+    pico_get_unique_board_id(&id);
+    return *(uint64_t *)(id.id);
+}
 
 void cli_register(const char *cmd, cmd_handler_t handler, const char *help)
 {
