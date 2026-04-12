@@ -15,6 +15,7 @@
 特别感谢社区开发者的启发和帮助：比如 CrazyRedMachine (https://github.com/CrazyRedMachine).
 
 还有：
+* GP2040-CE: https://gp2040-ce.info/ (PS4 支持)
 * RP_Silicon_KiCad: https://github.com/HeadBoffin/RP_Silicon_KiCad
 * Switch_Keyboard_Kailh: https://github.com/kiswitch/keyswitch-kicad-library
 

@@ -15,6 +15,7 @@ Thanks to many respectful guys/companies who made their tools or materials free 
 Special thanks to community developers that inspired me and helped me: CrazyRedMachine (https://github.com/CrazyRedMachine).
 
 And also:
+* GP2040-CE: https://gp2040-ce.info/ (for the PS4 support)
 * RP_Silicon_KiCad: https://github.com/HeadBoffin/RP_Silicon_KiCad
 * Switch_Keyboard_Kailh: https://github.com/kiswitch/keyswitch-kicad-library
 
