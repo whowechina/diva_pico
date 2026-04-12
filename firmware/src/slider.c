@@ -36,13 +36,15 @@ void slider_init()
     gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_SDA);
     gpio_pull_up(I2C_SCL);
-    
+
     for (int m = 0; m < 3; m++) {
         sensor_ok[m] = mpr121_init(MPR121_ADDR + m);
     }
     slider_update_config();
 
-    zone_num = sensor_ok[2] ? 32 : 16;
+    bool mode_16 = (sensor_ok[0] || sensor_ok[1]) && !sensor_ok[2];
+
+    zone_num = mode_16 ? 16 : 32;
 }
 
 uint16_t slider_zone_num()
