@@ -49,7 +49,8 @@ struct __attribute__((packed)) {
     uint8_t left_y;
     uint8_t right_x;
     uint8_t right_y;
-    uint8_t hat_buttons;
+    uint8_t hat : 4;
+    uint8_t buttons_0_3 : 4;
     uint8_t buttons_11_4;
     uint8_t buttons_counter;
     uint8_t trigger_l;
@@ -68,7 +69,6 @@ void report_usb_hid()
     uint64_t now = time_us_64();
 
     if (diva_runtime.hid_ps4) {
-        hid_ps4.hat_buttons = (hid_ps4.hat_buttons & 0xF0) | 0x08;
         if ((memcmp(&hid_ps4, &sent_hid_ps4, sizeof(hid_ps4)) != 0) ||
             (now - last_report_joy >= 2000)) {
             if (tud_hid_report(REPORT_ID_JOYSTICK, &hid_ps4, sizeof(hid_ps4))) {
@@ -94,23 +94,26 @@ static uint16_t unified_button_read()
     return button_read() | hebtn_read();
 }
 
-const static uint8_t maps[4][7] = {
+const static int8_t button_maps[4][7] = {
     { 3, 0, 1, 2, 12, 8, 9 },
     { 0, 3, 2, 1, 12, 8, 9 }, // Steam
     { 3, 0, 1, 2, 9, 12, 8 }, // Arcade
-    { 3, 0, 1, 2, 12, 9, 5 }, // PS4
+    { 3, 0, 1, 2, 12, -1, -1 }, // PS4
 };
 
+static uint16_t raw_buttons;
 static uint16_t mapped_buttons;
 
-static void map_buttons()
+static void proc_buttons()
 {
-    uint16_t button = unified_button_read();
-    const uint8_t *map = maps[diva_cfg->hid.joy_map % 4];
+    raw_buttons = unified_button_read();
+    const int8_t *map = button_maps[diva_cfg->hid.joy_map % 4];
 
     mapped_buttons = 0;
     for (int i = 0; i < 7; i++) {
-        mapped_buttons |= (button & (1 << i)) ? (1 << map[i]) : 0;
+        if (map[i] >= 0) {
+            mapped_buttons |= (raw_buttons & (1 << i)) ? (1 << map[i]) : 0;
+        }
     }
 }
 
@@ -153,18 +156,22 @@ static void gen_ps4_report()
     uint16_t ps4_buttons = mapped_buttons;
     hid_ps4.left_y = 0x80;
     hid_ps4.right_y = 0x80;
-    hid_ps4.hat_buttons = (ps4_buttons << 4);
+    hid_ps4.buttons_0_3 = ps4_buttons;
     hid_ps4.buttons_11_4 = ps4_buttons >> 4;
     hid_ps4.buttons_counter = ps4_buttons >> 12;
     hid_ps4.trigger_l = 0;
     hid_ps4.trigger_r = 0;
+
+    uint8_t side_buttons = (raw_buttons >> 5) & 0x03;
+    // HAT: 0-UP, 4-DOWN, 8-CENTER
+    hid_ps4.hat = side_buttons == 0x01 ? 0 : (side_buttons == 0x02 ? 4 : 8);
 
     gesture_process(touch_mask_raw(), &hid_ps4.left_x, &hid_ps4.right_x);
 } 
 
 static void gen_hid_report()
 {
-    map_buttons();
+    proc_buttons();
     if (diva_runtime.hid_ps4) {
         gen_ps4_report();
     } else {
