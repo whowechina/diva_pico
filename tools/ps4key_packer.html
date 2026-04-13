@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PS4 Key Serialization for Diva Pico</title>
+    <title>PS4 Key Packer for Diva Pico</title>
     <style>
         :root {
             --bg: #f4efe6;
@@ -47,8 +47,8 @@
 
         h1 {
             margin: 0;
-            font-size: clamp(2rem, 4vw, 3.8rem);
-            line-height: 0.95;
+            font-size: clamp(1.5rem, 3vw, 2.4rem);
+            line-height: 1.1;
             letter-spacing: -0.04em;
         }
 
@@ -69,18 +69,47 @@
             overflow: hidden;
         }
 
-        .grid {
+        .panel-main {
+            margin-top: 12px;
+            min-width: 800px;
+        }
+
+        .panel-top {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: stretch;
         }
 
         .section {
-            padding: 24px;
+            padding: 24px 24px 2px;
             border-right: 1px solid var(--line);
         }
 
         .section:last-child {
             border-right: none;
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        .button-section {
+            padding: 2px 24px 24px;
+            border-right: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+        }
+
+        .button-section:last-child {
+            border-right: none;
+        }
+
+        .button-section.left,
+        .button-section.right {
+            justify-content: center;
         }
 
         .section h2 {
@@ -130,43 +159,28 @@
             resize: vertical;
         }
 
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .output-actions {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 12px;
-        }
-
         button {
             border: none;
             border-radius: 999px;
-            padding: 14px 22px;
+            padding: 14px 88px;
             font: inherit;
             font-weight: 700;
             cursor: pointer;
+            box-shadow: 0 8px 24px rgba(15, 118, 110, 0.10);
             transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
         }
 
         button:hover {
             transform: translateY(-1px);
+            opacity: 0.96;
         }
 
-        .primary {
-            color: #f7fffe;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
-            box-shadow: 0 14px 30px rgba(15, 118, 110, 0.24);
-        }
-
-        .secondary {
-            color: var(--ink);
-            background: rgba(255, 255, 255, 0.78);
-            border: 1px solid var(--line);
+        .primay {
+            color: var(--accent-strong);
+            background: linear-gradient(135deg, #e6f7f5 0%, #d2f1ed 100%);
+            border: 1px solid #b6e2de;
+            box-shadow: 0 8px 24px rgba(15, 118, 110, 0.10);
+            padding: 14px 88px;
         }
 
 
@@ -178,7 +192,7 @@
         .status.output-status {
             margin-top: 0;
             margin-bottom: 0;
-            text-align: right;
+            text-align: left;
         }
 
         .status.warn {
@@ -215,60 +229,48 @@
             body {
                 padding: 20px 14px 32px;
             }
-
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            .section {
-                border-right: none;
-                border-bottom: 1px solid var(--line);
-            }
-
-            .section:last-child {
-                border-bottom: none;
-            }
         }
     </style>
 </head>
 <body>
     <main>
         <section class="hero">
-            <h1>PS4 Key Serialization for Diva Pico</h1>
-            <p class="subtitle">Pack <strong>signature.bin</strong>, <strong>serial.txt</strong>, and <strong>key.pem</strong> into one copy-friendly plain text string for the new <strong>ps4key</strong> CLI command. The format is <strong>PS4K1 + Base64(binary payload)</strong> with a CRC32 over the raw payload bytes.</p>
+            <h1>PS4 Key Packer for Diva Pico</h1>
         </section>
 
-        <section class="panel grid">
-            <div class="section">
-                <h2>Input</h2>
-                <p>Provide the binary signature, the 16-digit serial, and the RSA private key text. Validation is intentionally strict to catch common mistakes before flashing.</p>
+        <section class="panel panel-main">
+            <div class="panel-top">
+                <div class="section">
+                    <h2>Input</h2>
+                    <p>Provide the binary signature, the serial, and the RSA private key files.</p>
 
+                    <label for="sigFile">signature.bin file</label>
+                    <input id="sigFile" type="file" accept=".bin,application/octet-stream">
 
-                <label for="sigFile">signature.bin 文件</label>
-                <input id="sigFile" type="file" accept=".bin,application/octet-stream">
+                    <label for="serialFile">serial.txt file</label>
+                    <input id="serialFile" type="file" accept=".txt,text/plain">
 
-                <label for="serialFile">serial.txt 文件</label>
-                <input id="serialFile" type="file" accept=".txt,text/plain">
+                    <label for="pemFile">key.pem file</label>
+                    <input id="pemFile" type="file" accept=".pem,text/plain">
 
-                <label for="pemFile">key.pem 文件</label>
-                <input id="pemFile" type="file" accept=".pem,text/plain">
-
-                <div class="actions">
-                    <button id="packButton" class="primary" type="button">Pack</button>
+                    <div id="status" class="status" aria-live="polite"></div>
+                    <div id="meta" class="meta"></div>
                 </div>
 
-                <div id="status" class="status" aria-live="polite"></div>
-                <div id="meta" class="meta"></div>
+                <div class="section">
+                    <h2>Output</h2>
+                    <textarea id="output" class="output" readonly wrap="soft" placeholder="Packed text will appear here."></textarea>
+                    <div id="outputStatus" class="status output-status" aria-live="polite"></div>
+                </div>
             </div>
 
-            <div class="section">
-                <h2>Output</h2>
-                <p>Single-line plain text, suitable for direct paste into the CLI as <strong>ps4key &lt;serialized_key&gt;</strong>.</p>
-                <textarea id="output" class="output" readonly wrap="soft" placeholder="Packed text will appear here."></textarea>
-                <div class="output-actions">
-                    <button id="copyButton" class="secondary" type="button">Copy Output</button>
+            <div class="button-row">
+                <div class="button-section left">
+                    <button id="packButton" class="primay" type="button">Pack the Files</button>
                 </div>
-                <div id="outputStatus" class="status output-status" aria-live="polite"></div>
+                <div class="button-section right">
+                    <button id="copyButton" class="primay" type="button">Copy to Clipboard</button>
+                </div>
             </div>
         </section>
     </main>
@@ -316,20 +318,20 @@
 
         function assertInputs(serial, pem, sigBytes) {
             if (!sigBytes || sigBytes.length === 0) {
-                throw new Error("请上传 signature.bin 二进制文件。");
+                throw new Error("Please upload the signature.bin file.");
             }
             if (sigBytes.length > SIG_MAX_LENGTH) {
-                throw new Error(`signature.bin 二进制文件过大，最大 ${SIG_MAX_LENGTH} 字节。`);
+                throw new Error(`signature.bin is too large, max ${SIG_MAX_LENGTH} bytes.`);
             }
             if (!/^\d{16}$/.test(serial)) {
-                throw new Error("serial.txt 必须是 16 位十进制字符串。");
+                throw new Error("serial.txt must be a 16-digit decimal string.");
             }
             if (!pem.includes("-----BEGIN RSA PRIVATE KEY-----") ||
                 !pem.includes("-----END RSA PRIVATE KEY-----")) {
-                throw new Error("key.pem 必须包含 BEGIN/END RSA PRIVATE KEY 标记。");
+                throw new Error("key.pem must contain BEGIN/END RSA PRIVATE KEY markers.");
             }
             if (pem.length === 0 || pem.length > PEM_MAX_LENGTH) {
-                throw new Error(`key.pem 长度必须在 1-${PEM_MAX_LENGTH} 字符之间。`);
+                throw new Error(`key.pem length must be 1-${PEM_MAX_LENGTH} characters.`);
             }
         }
 
@@ -357,20 +359,25 @@
         function packPayload(serial, pem, sigBytes) {
             const serialBytes = encoder.encode(serial);
             const pemBytes = encoder.encode(pem);
-            const payloadLength = serialBytes.length + pemBytes.length + sigBytes.length;
+            const serialLen = serialBytes.length + 1;
+            const pemLen = pemBytes.length + 1;
+            const payloadLength = serialLen + pemLen + sigBytes.length;
             const payload = new Uint8Array(payloadLength);
             payload.set(serialBytes, 0);
-            payload.set(pemBytes, serialBytes.length);
-            payload.set(sigBytes, serialBytes.length + pemBytes.length);
+            payload[serialBytes.length] = 0;
+            payload.set(pemBytes, serialLen);
+            payload[serialLen + pemBytes.length] = 0;
+            payload.set(sigBytes, serialLen + pemLen);
 
-            const header = new Uint8Array(15);
+            const header = new Uint8Array(16);
             header.set([0x50, 0x53, 0x34, 0x4b], 0);
             header[4] = 1;
+            header[5] = 0;
             const view = new DataView(header.buffer);
-            view.setUint16(5, serialBytes.length, true);
-            view.setUint16(7, pemBytes.length, true);
-            view.setUint16(9, sigBytes.length, true);
-            view.setUint32(11, crc32(payload), true);
+            view.setUint16(6, serialLen, true);
+            view.setUint16(8, pemLen, true);
+            view.setUint16(10, sigBytes.length, true);
+            view.setUint32(12, crc32(payload), true);
 
             const packed = new Uint8Array(header.length + payload.length);
             packed.set(header, 0);
@@ -393,17 +400,18 @@
 
         async function doPack() {
             try {
-                // 前置文件选择校验
+
+                // Pre-file selection validation
                 if (!sigFileInput.files || !sigFileInput.files[0]) {
-                    setStatus("error", "请先选择 sig.bin 文件。");
+                    setStatus("error", "Please select sig.bin file.");
                     return;
                 }
                 if (!serialFileInput.files || !serialFileInput.files[0]) {
-                    setStatus("error", "请先选择 serial.txt 文件。");
+                    setStatus("error", "Please select serial.txt file.");
                     return;
                 }
                 if (!pemFileInput.files || !pemFileInput.files[0]) {
-                    setStatus("error", "请先选择 key.pem 文件。");
+                    setStatus("error", "Please select key.pem file.");
                     return;
                 }
 
@@ -411,16 +419,17 @@
                 const serialText = await readFileAsText(serialFileInput);
                 const pemText = await readFileAsText(pemFileInput);
 
+
                 if (!sigBytes || sigBytes.length === 0) {
-                    setStatus("error", "sig.bin 文件读取失败或为空。");
+                    setStatus("error", "sig.bin file read failed or empty.");
                     return;
                 }
                 if (!serialText || serialText.trim().length === 0) {
-                    setStatus("error", "serial.txt 文件读取失败或为空。");
+                    setStatus("error", "serial.txt file read failed or empty.");
                     return;
                 }
                 if (!pemText || pemText.trim().length === 0) {
-                    setStatus("error", "key.pem 文件读取失败或为空。");
+                    setStatus("error", "key.pem file read failed or empty.");
                     return;
                 }
 
@@ -431,13 +440,7 @@
 
                 const packed = packPayload(serial, pem, sigBytes);
                 output.value = packed;
-                setMeta([
-                    `serial: ${serial.length} bytes`,
-                    `pem: ${pem.length} bytes`,
-                    `sig: ${sigBytes.length} bytes`,
-                    `output: ${packed.length} chars`
-                ]);
-                setStatus("ok", "打包成功。");
+                setStatus("ok", `Packed successfully, total ${packed.length} chars.`);
             } catch (error) {
                 output.value = "";
                 setMeta([]);
@@ -447,7 +450,6 @@
 
         async function copyOutput() {
             if (!output.value) {
-                setOutputStatus("warn", "Nothing to copy.");
                 return;
             }
 
@@ -458,7 +460,6 @@
             } catch (error) {
                 output.focus();
                 output.select();
-                setOutputStatus("warn", "Clipboard API is unavailable. The output has been selected.");
             }
         }
 

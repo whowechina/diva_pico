@@ -67,7 +67,16 @@ static void disp_hid()
 {
     const char *joy_map[] = {"Switch", "Steam", "Arcade", "PS4"};
     printf("[HID]\n");
-    printf("  Keymap: %s\n", joy_map[diva_cfg->hid.joy_map % 4]);
+
+    int joy = diva_cfg->hid.joy_map % 4;
+
+    const char *key_info = "\0";
+    if (joy == 3) {
+        const ps4key_t *key = (const ps4key_t *)savedata_get_global();
+        key_info = ps4key_key_valid(key) ? " (Key loaded)" : " (No key, disconnected every 8 minutes)";
+    }
+
+    printf("  Keymap: %s%s\n", joy_map[joy], key_info);
 }
 
 void handle_display(int argc, char *argv[])
@@ -431,7 +440,7 @@ static void handle_factory_reset()
 
 static void handle_ps4key(int argc, char *argv[])
 {
-    static ps4key_data_t ps4key_data;
+    static ps4key_t key;
     const char *usage = "Usage: ps4key <serialized_key|clear>\n";
 
     if (argc != 1) {
@@ -440,23 +449,21 @@ static void handle_ps4key(int argc, char *argv[])
     }
 
     if (strncasecmp(argv[0], "clear", strlen(argv[0])) == 0) {
-        ps4key_clear_data(&ps4key_data);
+        memset(&key, 0, sizeof(key));        
         savedata_clear_global();
         printf("PS4 key data cleared.\n");
         return;
     }
 
-    const char *error = NULL;
-    if (!ps4key_parse_text(argv[0], &ps4key_data, &error)) {
-        printf("PS4 key import failed: %s\n", error ? error : "Unknown error.");
+    const char *error = "Unknown";
+    if (!ps4key_parse_text(argv[0], &key, &error)) {
+        printf("PS4 key import failed: %s\n", error);
         return;
     }
 
-    savedata_write_global(&ps4key_data, sizeof(ps4key_data));
-    printf("PS4 key stored: serial=%s pem=%u bytes sig=%u bytes.\n",
-            ps4key_data.serial,
-            (unsigned)ps4key_data.pem_len,
-            (unsigned)ps4key_data.sig_len);
+    savedata_write_global(&key, sizeof(key));
+    printf("PS4 key stored: Serial: %s, PEM: %d bytes, sig: %d bytes\n",
+            ps4key_get_serial(&key), key.pem_len - 1, key.sig_len);
 }
 
 void commands_init()

@@ -32,7 +32,7 @@ static uint32_t my_magic = 0xcafecafe;
 #define SAVE_TIMEOUT_US 5000000
 
 #define SAVE_SECTOR_OFFSET (PICO_FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE)
-#define GLOBAL_SECTOR_NUM 2
+#define GLOBAL_SECTOR_NUM 1
 #define GLOBAL_SECTOR_SIZE (GLOBAL_SECTOR_NUM * FLASH_SECTOR_SIZE)
 #define GLOBAL_SECTOR_OFFSET (SAVE_SECTOR_OFFSET - GLOBAL_SECTOR_SIZE)
 
@@ -164,16 +164,9 @@ void savedata_request(bool immediately)
     }
 }
 
-
-void savedata_read_global(size_t offset, void *data, size_t size)
+void *savedata_get_global()
 {
-    if ((data == NULL) || (size == 0) || (offset >= GLOBAL_SECTOR_SIZE)) {
-        return;
-    }
-    if (size > GLOBAL_SECTOR_SIZE - offset) {
-        size = GLOBAL_SECTOR_SIZE - offset;
-    }
-    memcpy(data, (void *)(XIP_BASE + GLOBAL_SECTOR_OFFSET + offset), size);
+    return (void *)(XIP_BASE + GLOBAL_SECTOR_OFFSET);
 }
 
 static void do_write_global(void *param)
@@ -211,7 +204,7 @@ void savedata_write_global(const void *data, size_t size)
     param[0] = (uintptr_t)global_write_buffer;
     param[1] = padded;
 
-    printf("Program Global %8x ", GLOBAL_SECTOR_OFFSET);
+    printf("Program Global %08x ", GLOBAL_SECTOR_OFFSET);
     if (flash_safe_execute(do_write_global, param, 1000) != PICO_OK) {
         printf("Failed!\n");
     } else {

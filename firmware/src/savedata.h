@@ -20,7 +20,7 @@ void savedata_loop();
 void *savedata_alloc(size_t size, void *def, void (*after_load)());
 void savedata_request(bool immediately);
 
-void savedata_read_global(size_t offset, void *data, size_t size);
+void *savedata_get_global();
 void savedata_write_global(const void *data, size_t size);
 void savedata_clear_global();
 size_t savedata_global_size();
