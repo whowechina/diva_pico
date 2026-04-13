@@ -278,8 +278,11 @@
     <script>
         const PREFIX = "PS4K1";
         const SERIAL_LENGTH = 16;
-        const PEM_MAX_LENGTH = 2048;
-        const SIG_MAX_LENGTH = 512;
+        const SIG_LENGTH = 256;
+        const RSA_N_LENGTH = 256;
+        const RSA_E_LENGTH = 4;
+        const RSA_P_LENGTH = 128;
+        const RSA_Q_LENGTH = 128;
 
         const sigFileInput = document.getElementById("sigFile");
         const serialFileInput = document.getElementById("serialFile");
@@ -320,8 +323,8 @@
             if (!sigBytes || sigBytes.length === 0) {
                 throw new Error("Please upload the signature.bin file.");
             }
-            if (sigBytes.length > SIG_MAX_LENGTH) {
-                throw new Error(`signature.bin is too large, max ${SIG_MAX_LENGTH} bytes.`);
+            if (sigBytes.length !== SIG_LENGTH) {
+                throw new Error(`signature.bin must be exactly ${SIG_LENGTH} bytes.`);
             }
             if (!/^\d{16}$/.test(serial)) {
                 throw new Error("serial.txt must be a 16-digit decimal string.");
@@ -330,9 +333,98 @@
                 !pem.includes("-----END RSA PRIVATE KEY-----")) {
                 throw new Error("key.pem must contain BEGIN/END RSA PRIVATE KEY markers.");
             }
-            if (pem.length === 0 || pem.length > PEM_MAX_LENGTH) {
-                throw new Error(`key.pem length must be 1-${PEM_MAX_LENGTH} characters.`);
+        }
+
+        function base64ToBytes(text) {
+            const binary = atob(text.replace(/\s+/g, ""));
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
             }
+            return bytes;
+        }
+
+        function parseLength(bytes, pos) {
+            if (pos >= bytes.length) {
+                throw new Error("Invalid DER: length overflow.");
+            }
+            const first = bytes[pos++];
+            if ((first & 0x80) === 0) {
+                return { len: first, pos };
+            }
+            const count = first & 0x7f;
+            if (count === 0 || count > 4 || pos + count > bytes.length) {
+                throw new Error("Invalid DER: unsupported length.");
+            }
+            let len = 0;
+            for (let i = 0; i < count; i++) {
+                len = (len << 8) | bytes[pos++];
+            }
+            return { len, pos };
+        }
+
+        function readTlv(bytes, pos, expectedTag) {
+            if (pos >= bytes.length || bytes[pos] !== expectedTag) {
+                throw new Error(`Invalid DER: expected tag 0x${expectedTag.toString(16)}.`);
+            }
+            pos += 1;
+            const parsed = parseLength(bytes, pos);
+            const len = parsed.len;
+            pos = parsed.pos;
+            const end = pos + len;
+            if (end > bytes.length) {
+                throw new Error("Invalid DER: truncated value.");
+            }
+            return { value: bytes.subarray(pos, end), end };
+        }
+
+        function trimInteger(bytes) {
+            let i = 0;
+            while (i < bytes.length - 1 && bytes[i] === 0) {
+                i += 1;
+            }
+            return bytes.subarray(i);
+        }
+
+        function toFixedWidth(bytes, width, name) {
+            const value = trimInteger(bytes);
+            if (value.length > width) {
+                throw new Error(`${name} is too large (${value.length} > ${width}).`);
+            }
+            const out = new Uint8Array(width);
+            out.set(value, width - value.length);
+            return out;
+        }
+
+        function parsePkcs1PrivateKey(pem) {
+            const base64 = pem
+                .replace(/-----BEGIN RSA PRIVATE KEY-----/g, "")
+                .replace(/-----END RSA PRIVATE KEY-----/g, "")
+                .replace(/\s+/g, "");
+            const der = base64ToBytes(base64);
+
+            const seq = readTlv(der, 0, 0x30);
+            let pos = 0;
+            const body = seq.value;
+
+            const version = readTlv(body, pos, 0x02);
+            pos = version.end;
+            const n = readTlv(body, pos, 0x02);
+            pos = n.end;
+            const e = readTlv(body, pos, 0x02);
+            pos = e.end;
+            const d = readTlv(body, pos, 0x02);
+            pos = d.end;
+            const p = readTlv(body, pos, 0x02);
+            pos = p.end;
+            const q = readTlv(body, pos, 0x02);
+
+            return {
+                n: toFixedWidth(n.value, RSA_N_LENGTH, "rsaN"),
+                e: toFixedWidth(e.value, RSA_E_LENGTH, "rsaE"),
+                p: toFixedWidth(p.value, RSA_P_LENGTH, "rsaP"),
+                q: toFixedWidth(q.value, RSA_Q_LENGTH, "rsaQ"),
+            };
         }
 
         function crc32(bytes) {
@@ -356,28 +448,38 @@
             return btoa(binary);
         }
 
-        function packPayload(serial, pem, sigBytes) {
+        function packPayload(serial, sigBytes, rsa) {
             const serialBytes = encoder.encode(serial);
-            const pemBytes = encoder.encode(pem);
             const serialLen = serialBytes.length + 1;
-            const pemLen = pemBytes.length + 1;
-            const payloadLength = serialLen + pemLen + sigBytes.length;
+            const payloadLength = serialLen + sigBytes.length +
+                                  rsa.n.length + rsa.e.length +
+                                  rsa.p.length + rsa.q.length;
             const payload = new Uint8Array(payloadLength);
             payload.set(serialBytes, 0);
             payload[serialBytes.length] = 0;
-            payload.set(pemBytes, serialLen);
-            payload[serialLen + pemBytes.length] = 0;
-            payload.set(sigBytes, serialLen + pemLen);
+            let offset = serialLen;
+            payload.set(sigBytes, offset);
+            offset += sigBytes.length;
+            payload.set(rsa.n, offset);
+            offset += rsa.n.length;
+            payload.set(rsa.e, offset);
+            offset += rsa.e.length;
+            payload.set(rsa.p, offset);
+            offset += rsa.p.length;
+            payload.set(rsa.q, offset);
 
-            const header = new Uint8Array(16);
+            const header = new Uint8Array(22);
             header.set([0x50, 0x53, 0x34, 0x4b], 0);
             header[4] = 1;
             header[5] = 0;
             const view = new DataView(header.buffer);
             view.setUint16(6, serialLen, true);
-            view.setUint16(8, pemLen, true);
-            view.setUint16(10, sigBytes.length, true);
-            view.setUint32(12, crc32(payload), true);
+            view.setUint16(8, sigBytes.length, true);
+            view.setUint16(10, rsa.n.length, true);
+            view.setUint16(12, rsa.e.length, true);
+            view.setUint16(14, rsa.p.length, true);
+            view.setUint16(16, rsa.q.length, true);
+            view.setUint32(18, crc32(payload), true);
 
             const packed = new Uint8Array(header.length + payload.length);
             packed.set(header, 0);
@@ -437,8 +539,8 @@
                 const pem = pemText ? normalizePem(pemText) : "";
 
                 assertInputs(serial, pem, sigBytes);
-
-                const packed = packPayload(serial, pem, sigBytes);
+                const rsa = parsePkcs1PrivateKey(pem);
+                const packed = packPayload(serial, sigBytes, rsa);
                 output.value = packed;
                 setStatus("ok", `Packed successfully, total ${packed.length} chars.`);
             } catch (error) {

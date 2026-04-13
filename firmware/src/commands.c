@@ -13,6 +13,7 @@
 #include "savedata.h"
 #include "cli.h"
 #include "ps4key.h"
+#include "crypto/ps4_crypto.h"
 
 #include "gesture.h"
 
@@ -462,8 +463,27 @@ static void handle_ps4key(int argc, char *argv[])
     }
 
     savedata_write_global(&key, sizeof(key));
-    printf("PS4 key stored: Serial: %s, PEM: %d bytes, sig: %d bytes\n",
-            ps4key_get_serial(&key), key.pem_len - 1, key.sig_len);
+    printf("PS4 key stored: Serial: %s, sig: %d bytes, N/E/P/Q: %d/%d/%d/%d bytes\n",
+            ps4key_get_serial(&key),
+            key.sig_len,
+            key.rsa_n_len,
+            key.rsa_e_len,
+            key.rsa_p_len,
+            key.rsa_q_len);
+}
+
+static void handle_rsa(int argc, char *argv[])
+{
+    (void)argv;
+    if (argc != 0) {
+        printf("Usage: rsa\n");
+        return;
+    }
+
+    if (!ps4_crypto_selftest()) {
+        printf("PS4 crypto selftest failed.\n");
+        return;
+    }
 }
 
 void commands_init()
@@ -482,4 +502,5 @@ void commands_init()
     cli_register("save", handle_save, "Save config to flash.");
     cli_register("factory", handle_factory_reset, "Reset everything to default.");
     cli_register("ps4key", handle_ps4key, "Import or clear serialized PS4 key data.");
+    cli_register("rsa", handle_rsa, "Run hello-world SHA256, nonce SHA256, and RSA context smoke test.");
 }

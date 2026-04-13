@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "mbedtls/pk.h"
+#include "mbedtls/rsa.h"
+
 #include "ps4key.h"
 
 static uint32_t crc32_calc(const uint8_t *data, size_t size)
@@ -122,10 +125,86 @@ static bool serial_is_valid(const uint8_t *serial, size_t size)
     return true;
 }
 
-static bool pem_is_valid(const char *pem)
+static size_t key_payload_len(const ps4key_t *key)
 {
-    return strstr(pem, "-----BEGIN RSA PRIVATE KEY-----") &&
-           strstr(pem, "-----END RSA PRIVATE KEY-----");
+    return key->serial_len + key->sig_len +
+           key->rsa_n_len + key->rsa_e_len +
+           key->rsa_p_len + key->rsa_q_len;
+}
+
+static size_t sig_offset(const ps4key_t *key)
+{
+    return key->serial_len;
+}
+
+static size_t rsa_n_offset(const ps4key_t *key)
+{
+    return sig_offset(key) + key->sig_len;
+}
+
+static size_t rsa_e_offset(const ps4key_t *key)
+{
+    return rsa_n_offset(key) + key->rsa_n_len;
+}
+
+static size_t rsa_p_offset(const ps4key_t *key)
+{
+    return rsa_e_offset(key) + key->rsa_e_len;
+}
+
+static size_t rsa_q_offset(const ps4key_t *key)
+{
+    return rsa_p_offset(key) + key->rsa_p_len;
+}
+
+static bool rebuild_pem(const ps4key_t *key, char *pem, size_t pem_size)
+{
+    mbedtls_mpi n;
+    mbedtls_mpi e;
+    mbedtls_mpi p;
+    mbedtls_mpi q;
+    mbedtls_mpi_init(&n);
+    mbedtls_mpi_init(&e);
+    mbedtls_mpi_init(&p);
+    mbedtls_mpi_init(&q);
+
+    int ret = mbedtls_mpi_read_binary(&n, ps4key_get_rsa_n(key), key->rsa_n_len);
+    if (ret != 0) goto cleanup;
+    ret = mbedtls_mpi_read_binary(&e, ps4key_get_rsa_e(key), key->rsa_e_len);
+    if (ret != 0) goto cleanup;
+    ret = mbedtls_mpi_read_binary(&p, ps4key_get_rsa_p(key), key->rsa_p_len);
+    if (ret != 0) goto cleanup;
+    ret = mbedtls_mpi_read_binary(&q, ps4key_get_rsa_q(key), key->rsa_q_len);
+    if (ret != 0) goto cleanup;
+
+    mbedtls_pk_context pk;
+    mbedtls_pk_init(&pk);
+
+    ret = mbedtls_pk_setup(&pk, mbedtls_pk_info_from_type(MBEDTLS_PK_RSA));
+    if (ret != 0) {
+        mbedtls_pk_free(&pk);
+        goto cleanup;
+    }
+
+    mbedtls_rsa_context *rsa = mbedtls_pk_rsa(pk);
+    mbedtls_rsa_set_padding(rsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
+
+    ret = mbedtls_rsa_import(rsa, &n, &p, &q, NULL, &e);
+    if (ret == 0) {
+        ret = mbedtls_rsa_complete(rsa);
+    }
+    if (ret == 0) {
+        ret = mbedtls_pk_write_key_pem(&pk, (unsigned char *)pem, pem_size);
+    }
+
+    mbedtls_pk_free(&pk);
+
+cleanup:
+    mbedtls_mpi_free(&n);
+    mbedtls_mpi_free(&e);
+    mbedtls_mpi_free(&p);
+    mbedtls_mpi_free(&q);
+    return ret == 0;
 }
 
 static void set_error(const char **error, const char *message)
@@ -149,13 +228,16 @@ static bool ps4key_validate(const ps4key_t *key, const char **error)
     }
 
     if ((key->serial_len != (PS4KEY_SERIAL_LENGTH + 1)) ||
-        (key->pem_len <= 1) || (key->pem_len > (PS4KEY_PEM_MAX_LENGTH + 1)) ||
-        (key->sig_len == 0) || (key->sig_len > PS4KEY_SIG_MAX_LENGTH)) {
+        (key->sig_len != PS4KEY_SIG_LENGTH) ||
+        (key->rsa_n_len != PS4KEY_RSA_N_LENGTH) ||
+        (key->rsa_e_len == 0) || (key->rsa_e_len > PS4KEY_RSA_E_LENGTH) ||
+        (key->rsa_p_len != PS4KEY_RSA_P_LENGTH) ||
+        (key->rsa_q_len != PS4KEY_RSA_Q_LENGTH)) {
         set_error(error, "Serialized part lengths are invalid.");
         return false;
     }
 
-    size_t payload_len = key->serial_len + key->pem_len + key->sig_len;
+    size_t payload_len = key_payload_len(key);
     if (payload_len > sizeof(key->payload)) {
         set_error(error, "Serialized length mismatch.");
         return false;
@@ -171,14 +253,9 @@ static bool ps4key_validate(const ps4key_t *key, const char **error)
         return false;
     }
 
-    const uint8_t *pem_ptr = key->payload + key->serial_len;
-    if (pem_ptr[key->pem_len - 1] != '\0') {
-        set_error(error, "PEM data is not null terminated.");
-        return false;
-    }
-
-    if (!pem_is_valid((const char *)pem_ptr)) {
-        set_error(error, "PEM content does not look like an RSA private key.");
+    size_t rsa_q_end = rsa_q_offset(key) + key->rsa_q_len;
+    if (rsa_q_end != payload_len) {
+        set_error(error, "Serialized layout mismatch.");
         return false;
     }
 
@@ -211,7 +288,7 @@ bool ps4key_parse_text(const char *text, ps4key_t *key, const char **error)
         return false;
     }
     const ps4key_t *src = (const ps4key_t *)decoded;
-    size_t payload_len = src->serial_len + src->pem_len + src->sig_len;
+    size_t payload_len = key_payload_len(src);
     if (decoded_len != header_len + payload_len) {
         set_error(error, "Serialized length mismatch.");
         return false;
@@ -238,10 +315,22 @@ const char *ps4key_get_serial(const ps4key_t *key)
 
 const char *ps4key_get_pem(const ps4key_t *key)
 {
-    if (key == NULL) {
+    static char pem[2048] = {0};
+    static uint32_t last_crc = 0;
+
+    if ((key == NULL) || !ps4key_key_valid(key)) {
         return NULL;
     }
-    return (const char *)(key->payload + key->serial_len);
+
+    if ((last_crc != key->crc32) || (pem[0] == '\0')) {
+        memset(pem, 0, sizeof(pem));
+        if (!rebuild_pem(key, pem, sizeof(pem))) {
+            return NULL;
+        }
+        last_crc = key->crc32;
+    }
+
+    return pem;
 }
 
 const uint8_t *ps4key_get_sig(const ps4key_t *key)
@@ -249,7 +338,7 @@ const uint8_t *ps4key_get_sig(const ps4key_t *key)
     if (key == NULL) {
         return NULL;
     }
-    return key->payload + key->serial_len + key->pem_len;
+    return key->payload + sig_offset(key);
 }
 
 size_t ps4key_get_sig_len(const ps4key_t *key)
@@ -258,4 +347,36 @@ size_t ps4key_get_sig_len(const ps4key_t *key)
         return 0;
     }
     return key->sig_len;
+}
+
+const uint8_t *ps4key_get_rsa_n(const ps4key_t *key)
+{
+    if (key == NULL) {
+        return NULL;
+    }
+    return key->payload + rsa_n_offset(key);
+}
+
+const uint8_t *ps4key_get_rsa_e(const ps4key_t *key)
+{
+    if (key == NULL) {
+        return NULL;
+    }
+    return key->payload + rsa_e_offset(key);
+}
+
+const uint8_t *ps4key_get_rsa_p(const ps4key_t *key)
+{
+    if (key == NULL) {
+        return NULL;
+    }
+    return key->payload + rsa_p_offset(key);
+}
+
+const uint8_t *ps4key_get_rsa_q(const ps4key_t *key)
+{
+    if (key == NULL) {
+        return NULL;
+    }
+    return key->payload + rsa_q_offset(key);
 }
