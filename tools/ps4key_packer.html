@@ -276,13 +276,19 @@
     </main>
 
     <script>
-        const PREFIX = "PS4K1";
+        const PREFIX = "PS4KX";
+        const VERSION = 3;
         const SERIAL_LENGTH = 16;
         const SIG_LENGTH = 256;
         const RSA_N_LENGTH = 256;
         const RSA_E_LENGTH = 4;
         const RSA_P_LENGTH = 128;
         const RSA_Q_LENGTH = 128;
+        const RSA_D_LENGTH = 256;
+        const RSA_DP_LENGTH = 128;
+        const RSA_DQ_LENGTH = 128;
+        const RSA_QINV_LENGTH = 128;
+        const PAYLOAD_LENGTH = SERIAL_LENGTH + SIG_LENGTH + RSA_N_LENGTH + RSA_P_LENGTH + RSA_Q_LENGTH + RSA_E_LENGTH + RSA_D_LENGTH + RSA_DP_LENGTH + RSA_DQ_LENGTH + RSA_QINV_LENGTH;
 
         const sigFileInput = document.getElementById("sigFile");
         const serialFileInput = document.getElementById("serialFile");
@@ -396,6 +402,18 @@
             return out;
         }
 
+        function parseSmallInteger(bytes, name) {
+            const value = trimInteger(bytes);
+            if (value.length > 4) {
+                throw new Error(`${name} is too large to display.`);
+            }
+            let result = 0;
+            for (const byte of value) {
+                result = (result << 8) | byte;
+            }
+            return result;
+        }
+
         function parsePkcs1PrivateKey(pem) {
             const base64 = pem
                 .replace(/-----BEGIN RSA PRIVATE KEY-----/g, "")
@@ -418,12 +436,25 @@
             const p = readTlv(body, pos, 0x02);
             pos = p.end;
             const q = readTlv(body, pos, 0x02);
+            pos = q.end;
+            const dP = readTlv(body, pos, 0x02);
+            pos = dP.end;
+            const dQ = readTlv(body, pos, 0x02);
+            pos = dQ.end;
+            const qInv = readTlv(body, pos, 0x02);
 
             return {
+                pemFormat: "PKCS#1 RSAPrivateKey",
+                pemVersion: parseSmallInteger(version.value, "pemVersion"),
+                crtSource: "Embedded in PEM fields (dP/dQ/qInv), not derived by the packer",
                 n: toFixedWidth(n.value, RSA_N_LENGTH, "rsaN"),
                 e: toFixedWidth(e.value, RSA_E_LENGTH, "rsaE"),
+                d: toFixedWidth(d.value, RSA_D_LENGTH, "rsaD"),
                 p: toFixedWidth(p.value, RSA_P_LENGTH, "rsaP"),
                 q: toFixedWidth(q.value, RSA_Q_LENGTH, "rsaQ"),
+                dP: toFixedWidth(dP.value, RSA_DP_LENGTH, "rsaDp"),
+                dQ: toFixedWidth(dQ.value, RSA_DQ_LENGTH, "rsaDq"),
+                qInv: toFixedWidth(qInv.value, RSA_QINV_LENGTH, "rsaQInv"),
             };
         }
 
@@ -450,36 +481,33 @@
 
         function packPayload(serial, sigBytes, rsa) {
             const serialBytes = encoder.encode(serial);
-            const serialLen = serialBytes.length + 1;
-            const payloadLength = serialLen + sigBytes.length +
-                                  rsa.n.length + rsa.e.length +
-                                  rsa.p.length + rsa.q.length;
-            const payload = new Uint8Array(payloadLength);
+            const payload = new Uint8Array(PAYLOAD_LENGTH);
             payload.set(serialBytes, 0);
-            payload[serialBytes.length] = 0;
-            let offset = serialLen;
+            let offset = SERIAL_LENGTH;
             payload.set(sigBytes, offset);
             offset += sigBytes.length;
             payload.set(rsa.n, offset);
             offset += rsa.n.length;
-            payload.set(rsa.e, offset);
-            offset += rsa.e.length;
             payload.set(rsa.p, offset);
             offset += rsa.p.length;
             payload.set(rsa.q, offset);
+            offset += rsa.q.length;
+            payload.set(rsa.e, offset);
+            offset += rsa.e.length;
+            payload.set(rsa.d, offset);
+            offset += rsa.d.length;
+            payload.set(rsa.dP, offset);
+            offset += rsa.dP.length;
+            payload.set(rsa.dQ, offset);
+            offset += rsa.dQ.length;
+            payload.set(rsa.qInv, offset);
 
-            const header = new Uint8Array(22);
+            const header = new Uint8Array(10);
             header.set([0x50, 0x53, 0x34, 0x4b], 0);
-            header[4] = 1;
+            header[4] = VERSION;
             header[5] = 0;
             const view = new DataView(header.buffer);
-            view.setUint16(6, serialLen, true);
-            view.setUint16(8, sigBytes.length, true);
-            view.setUint16(10, rsa.n.length, true);
-            view.setUint16(12, rsa.e.length, true);
-            view.setUint16(14, rsa.p.length, true);
-            view.setUint16(16, rsa.q.length, true);
-            view.setUint32(18, crc32(payload), true);
+            view.setUint32(6, crc32(payload), true);
 
             const packed = new Uint8Array(header.length + payload.length);
             packed.set(header, 0);
@@ -543,6 +571,12 @@
                 const packed = packPayload(serial, sigBytes, rsa);
                 output.value = packed;
                 setStatus("ok", `Packed successfully, total ${packed.length} chars.`);
+                setMeta([
+                    `Serialized key version: V${VERSION} only`,
+                    `PEM format: ${rsa.pemFormat}`,
+                    `PEM version field: ${rsa.pemVersion} (${rsa.pemVersion === 0 ? "two-prime RSA" : "multi-prime RSA"})`,
+                    `CRT parameter source: ${rsa.crtSource}`,
+                ]);
             } catch (error) {
                 output.value = "";
                 setMeta([]);

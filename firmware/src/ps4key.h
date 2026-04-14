@@ -10,43 +10,43 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define PS4KEY_TEXT_PREFIX "PS4K1"
+#define PS4KEY_TEXT_PREFIX "PS4KX"
 #define PS4KEY_STORAGE_MAGIC 0x4b345350u
-#define PS4KEY_STORAGE_VERSION 1u
-#define PS4KEY_SERIAL_LENGTH 16
-#define PS4KEY_SIG_LENGTH 256
-#define PS4KEY_RSA_N_LENGTH 256
-#define PS4KEY_RSA_E_LENGTH 4
-#define PS4KEY_RSA_P_LENGTH 128
-#define PS4KEY_RSA_Q_LENGTH 128
-#define PS4KEY_PAYLOAD_MAX_LENGTH (PS4KEY_SERIAL_LENGTH + 1 + PS4KEY_SIG_LENGTH + \
-                                  PS4KEY_RSA_N_LENGTH + PS4KEY_RSA_E_LENGTH + \
-                                  PS4KEY_RSA_P_LENGTH + PS4KEY_RSA_Q_LENGTH)
+#define PS4KEY_STORAGE_VERSION 3u
 
 typedef struct __attribute__((packed)) {
     uint32_t magic;
     uint8_t version;
     uint8_t reserved;
-    uint16_t serial_len;
-    uint16_t sig_len;
-    uint16_t rsa_n_len;
-    uint16_t rsa_e_len;
-    uint16_t rsa_p_len;
-    uint16_t rsa_q_len;
     uint32_t crc32;
-    uint8_t payload[PS4KEY_PAYLOAD_MAX_LENGTH];
+    uint8_t serial[16];
+    uint8_t signature[256];
+    uint8_t rsa_n[256];
+    uint8_t rsa_p[128];
+    uint8_t rsa_q[128];
+    uint8_t rsa_e[4];
+    uint8_t rsa_d[256];   /* Private exponent for CRT */
+    uint8_t rsa_dp[128];  /* d mod (p-1) for CRT */
+    uint8_t rsa_dq[128];  /* d mod (q-1) for CRT */
+    uint8_t rsa_qinv[128]; /* q^-1 mod p for CRT */
 } ps4key_t;
+
+#define PS4KEY_PAYLOAD_LENGTH (sizeof(ps4key_t) - offsetof(ps4key_t, serial))
 
 bool ps4key_parse_text(const char *text, ps4key_t *key, const char **error);
 bool ps4key_key_valid(const ps4key_t *key);
 
-const char *ps4key_get_serial(const ps4key_t *key);
-const char *ps4key_get_pem(const ps4key_t *key);
-const uint8_t *ps4key_get_sig(const ps4key_t *key);
-size_t ps4key_get_sig_len(const ps4key_t *key);
-const uint8_t *ps4key_get_rsa_n(const ps4key_t *key);
-const uint8_t *ps4key_get_rsa_e(const ps4key_t *key);
-const uint8_t *ps4key_get_rsa_p(const ps4key_t *key);
-const uint8_t *ps4key_get_rsa_q(const ps4key_t *key);
+void ps4key_async_init(void);
+void ps4key_core1_loop(void);
+void ps4key_process_auth(void);
+void ps4key_reset_auth(void);
+
+uint16_t ps4key_get_report(uint8_t report_id, uint8_t report_type,
+                           uint8_t *buffer, uint16_t reqlen);
+void ps4key_set_report(uint8_t report_id, uint8_t report_type,
+                       uint8_t const *buffer, uint16_t bufsize);
+
+/* Performance benchmark: compare CRT vs non-CRT RSA signing */
+void ps4key_bench_sign(void);
 
 #endif

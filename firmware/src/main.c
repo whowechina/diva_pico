@@ -34,7 +34,7 @@
 #include "button.h"
 #include "hebtn.h"
 #include "lzfx.h"
-#include "ps4_feat.h"
+#include "ps4key.h"
 #include "gesture.h"
 
 struct __attribute__((packed)) {
@@ -163,8 +163,8 @@ static void gen_ps4_report()
     hid_ps4.trigger_r = 0;
 
     uint8_t side_buttons = (raw_buttons >> 5) & 0x03;
-    // HAT: 0-UP, 4-DOWN, 8-CENTER
-    hid_ps4.hat = side_buttons == 0x01 ? 0 : (side_buttons == 0x02 ? 4 : 8);
+    // HAT: 0-UP, 4-DOWN, 0x0F-CENTER (aligned with GP2040 PS4 mapping)
+    hid_ps4.hat = side_buttons == 0x01 ? 0 : (side_buttons == 0x02 ? 4 : 0x0F);
 
     gesture_process(touch_mask_raw(), &hid_ps4.left_x, &hid_ps4.right_x);
 } 
@@ -211,9 +211,24 @@ static void run_lights()
         rainbow_level += (rainbow_level < 168) ? 2 : 1;
     }
 
+    if (time_us_64() > 601 * 1000 * 1000ULL) {
+        rainbow_level = 16;
+    }
+
     for (int i = 0; i < zone_num; i++) {
         uint32_t color = rgb32_from_hsv(i * 256 / zone_num + phase, 255, rainbow_level / 2);
         rgb_slider_color(i, touch_bits & (1 << i) ? 0xffffff: color);
+    }
+}
+
+static void light_update()
+{
+    static uint64_t next_light = 8000;
+    uint64_t now = time_us_64();
+    if (now >= next_light) {
+        run_lights();
+        rgb_update();
+        next_light = now + 8000;
     }
 }
 
@@ -225,13 +240,7 @@ static void core1_init()
 static void core1_loop()
 {
     core1_init();
-
-    while (1) {
-        run_lights();
-        rgb_update();
-        cli_fps_count(1);
-        sleep_us(700);
-    }
+    ps4key_core1_loop();
 }
 
 static void core0_loop()
@@ -243,6 +252,10 @@ static void core0_loop()
 
         cli_run();
     
+        if (time_us_64() > 10 * 60 * 1000 * 1000ULL) {
+            savedata_save_log();
+        }
+
         savedata_loop();
         cli_fps_count(0);
 
@@ -250,12 +263,35 @@ static void core0_loop()
         slider_update();
         hebtn_update();
 
+        light_update();
+    
         gen_hid_report();
         report_usb_hid();
 
         next_frame += 1000;
         sleep_until(next_frame);
     }
+}
+
+void tud_mount_cb(void)
+{
+    savedata_logf("usb mount");
+}
+
+void tud_umount_cb(void)
+{
+    savedata_logf("usb unmount");
+}
+
+void tud_suspend_cb(bool remote_wakeup_en)
+{
+    (void)remote_wakeup_en;
+    savedata_logf("usb suspend");
+}
+
+void tud_resume_cb(void)
+{
+    savedata_logf("usb resume");
 }
 
 /* if certain key pressed when booting, enter update mode */
@@ -301,15 +337,17 @@ static void keymap_check()
     } else {
         return;
     }
+
     diva_runtime.hid_ps4 = (diva_cfg->hid.joy_map == 3);
     hid_use_ps4(diva_runtime.hid_ps4);
+
     config_changed();
 }
 
 void init()
 {
     sleep_ms(50);
-    set_sys_clock_khz(150000, true);
+    set_sys_clock_khz(180000, true);
 
     update_check();
 
@@ -336,6 +374,8 @@ void init()
     tusb_init();
     stdio_init_all();
 
+    ps4key_async_init();
+
     cli_init("diva_pico>", "\n   << Diva Pico Controller >>\n"
                             " https://github.com/whowechina\n\n");
     
@@ -358,7 +398,15 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id,
                                uint16_t reqlen)
 {
     if (diva_runtime.hid_ps4) {
-        return ps4_feat_get_report(report_id, report_type, buffer, reqlen);
+        if (report_type != HID_REPORT_TYPE_FEATURE) {
+            uint16_t resp_len = sizeof(hid_ps4);
+            if (resp_len > reqlen) {
+                resp_len = reqlen;
+            }
+            memcpy(buffer, &hid_ps4, resp_len);
+            return resp_len;
+        }
+        return ps4key_get_report(report_id, report_type, buffer, reqlen);
     }
     printf("Get from USB %d-%d\n", report_id, report_type);
     return 0;
@@ -371,7 +419,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            uint16_t bufsize)
 {
     if (diva_runtime.hid_ps4) {
-        ps4_feat_set_report(report_id, report_type, buffer, bufsize);
+        ps4key_set_report(report_id, report_type, buffer, bufsize);
         return;
     }
 

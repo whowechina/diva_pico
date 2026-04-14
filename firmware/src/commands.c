@@ -13,7 +13,6 @@
 #include "savedata.h"
 #include "cli.h"
 #include "ps4key.h"
-#include "crypto/ps4_crypto.h"
 
 #include "gesture.h"
 
@@ -463,26 +462,37 @@ static void handle_ps4key(int argc, char *argv[])
     }
 
     savedata_write_global(&key, sizeof(key));
-    printf("PS4 key stored: Serial: %s, sig: %d bytes, N/E/P/Q: %d/%d/%d/%d bytes\n",
-            ps4key_get_serial(&key),
-            key.sig_len,
-            key.rsa_n_len,
-            key.rsa_e_len,
-            key.rsa_p_len,
-            key.rsa_q_len);
+
+    printf("PS4 key stored: Serial: %.*s.\n", sizeof(key.serial), key.serial);
 }
 
 static void handle_rsa(int argc, char *argv[])
 {
-    (void)argv;
     if (argc != 0) {
         printf("Usage: rsa\n");
+        printf("  Benchmark RSA signing: CRT vs Non-CRT\n");
         return;
     }
 
-    if (!ps4_crypto_selftest()) {
-        printf("PS4 crypto selftest failed.\n");
+    ps4key_bench_sign();
+}
+
+static void handle_log(int argc, char *argv[])
+{
+    if (argc != 0) {
+        printf("Usage: log\n");
         return;
+    }
+
+    size_t log_size = savedata_log_size();
+    if (log_size == 0) {
+        printf("Log is empty.\n");
+        return;
+    }
+
+    fwrite(savedata_get_log(), 1, log_size, stdout);
+    if (((const char *)savedata_get_log())[log_size - 1] != '\n') {
+        printf("\n");
     }
 }
 
@@ -502,5 +512,6 @@ void commands_init()
     cli_register("save", handle_save, "Save config to flash.");
     cli_register("factory", handle_factory_reset, "Reset everything to default.");
     cli_register("ps4key", handle_ps4key, "Import or clear serialized PS4 key data.");
-    cli_register("rsa", handle_rsa, "Run hello-world SHA256, nonce SHA256, and RSA context smoke test.");
+    cli_register("rsa", handle_rsa, "Benchmark RSA: CRT vs Non-CRT signing speed.");
+    cli_register("log", handle_log, "Show persisted offline debug log.");
 }
