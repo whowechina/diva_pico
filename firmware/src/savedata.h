@@ -12,7 +12,6 @@
 
 #include "pico/multicore.h"
 
-/* It's safer to lock other I/O ops during saving, so we need a locker */
 void savedata_init(uint32_t magic);
 
 void savedata_loop();
@@ -24,5 +23,10 @@ void *savedata_get_global();
 void savedata_write_global(const void *data, size_t size);
 void savedata_clear_global();
 size_t savedata_global_size();
+
+void savedata_logf(const char *fmt, ...);
+const char *savedata_get_log();
+void savedata_save_log();
+size_t savedata_log_size();
 
 #endif

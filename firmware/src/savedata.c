@@ -12,10 +12,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <memory.h>
-
+#include <stdarg.h>
 
 #include "pico/bootrom.h"
 #include "pico/stdio.h"
+#include "pico/mutex.h"
 
 #include "hardware/flash.h"
 #include "pico/multicore.h"
@@ -30,13 +31,25 @@ static int module_num = 0;
 static uint32_t my_magic = 0xcafecafe;
 
 #define SAVE_TIMEOUT_US 5000000
+#define LOG_SECTOR_NUM 2
 
 #define SAVE_SECTOR_OFFSET (PICO_FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE)
 #define GLOBAL_SECTOR_NUM 1
 #define GLOBAL_SECTOR_SIZE (GLOBAL_SECTOR_NUM * FLASH_SECTOR_SIZE)
 #define GLOBAL_SECTOR_OFFSET (SAVE_SECTOR_OFFSET - GLOBAL_SECTOR_SIZE)
+#define LOG_SECTOR_SIZE (LOG_SECTOR_NUM * FLASH_SECTOR_SIZE)
+#define LOG_SECTOR_OFFSET (GLOBAL_SECTOR_OFFSET - LOG_SECTOR_SIZE)
 
 static uint8_t global_write_buffer[GLOBAL_SECTOR_SIZE];
+static char log_ram_buffer[LOG_SECTOR_SIZE];
+static size_t log_ram_length = 0;
+
+static bool log_ram_truncated = false;
+
+static bool log_persisted = false;
+static bool request_log_persist = false;
+
+static mutex_t log_mutex;
 
 typedef struct __attribute ((packed)) {
     uint32_t magic;
@@ -59,6 +72,16 @@ static void do_write(void *param)
         }
         flash_range_program(SAVE_SECTOR_OFFSET + data_page * FLASH_PAGE_SIZE,
                             (uint8_t *)&old_data, FLASH_PAGE_SIZE);
+}
+
+static void do_write_log(void *param)
+{
+    uintptr_t *p = (uintptr_t *)param;
+    const uint8_t *data = (const uint8_t *)p[0];
+    size_t size = (size_t)p[1];
+
+    flash_range_erase(LOG_SECTOR_OFFSET, LOG_SECTOR_SIZE);
+    flash_range_program(LOG_SECTOR_OFFSET, data, size);
 }
 
 static void save_program()
@@ -113,24 +136,26 @@ static void save_loaded()
     }
 }
 
+static void log_init()
+{
+    mutex_init(&log_mutex);
+    memset(log_ram_buffer, 0xff, sizeof(log_ram_buffer));
+    log_ram_buffer[0] = '\0';
+}
+
 void savedata_init(uint32_t magic)
 {
     my_magic = magic;
     save_load();
     savedata_loop();
     save_loaded();
+
+    log_init();
 }
 
-void savedata_loop()
+void savedata_save_log()
 {
-    if (requesting_save && (time_us_64() - requesting_time > SAVE_TIMEOUT_US)) {
-        requesting_save = false;
-        /* only when data is actually changed */
-        if (memcmp(&old_data, &new_data, sizeof(old_data)) == 0) {
-            return;
-        }
-        save_program();
-    }
+    request_log_persist = true;
 }
 
 void *savedata_alloc(size_t size, void *def, void (*after_load)())
@@ -221,4 +246,133 @@ void savedata_clear_global()
 size_t savedata_global_size()
 {
     return GLOBAL_SECTOR_SIZE;
+}
+
+void savedata_logf(const char *fmt, ...)
+{
+    if (fmt == NULL) {
+        return;
+    }
+
+    mutex_enter_blocking(&log_mutex);
+
+    if (log_persisted || log_ram_truncated || (log_ram_length >= sizeof(log_ram_buffer) - 1)) {
+        mutex_exit(&log_mutex);
+        return;
+    }
+
+    uint32_t time_ms = time_us_32() / 1000;
+    int written = snprintf(log_ram_buffer + log_ram_length,
+                           sizeof(log_ram_buffer) - log_ram_length,
+                           "%lu: ",
+                           (unsigned long)time_ms);
+    if ((written < 0) || ((size_t)written >= (sizeof(log_ram_buffer) - log_ram_length))) {
+        log_ram_length = sizeof(log_ram_buffer) - 1;
+        log_ram_buffer[log_ram_length] = '\0';
+        log_ram_truncated = true;
+        mutex_exit(&log_mutex);
+        return;
+    }
+    log_ram_length += (size_t)written;
+
+    va_list args;
+    va_start(args, fmt);
+    written = vsnprintf(log_ram_buffer + log_ram_length,
+                        sizeof(log_ram_buffer) - log_ram_length,
+                        fmt,
+                        args);
+    va_end(args);
+    if (written < 0) {
+        mutex_exit(&log_mutex);
+        return;
+    }
+
+    if ((size_t)written >= (sizeof(log_ram_buffer) - log_ram_length)) {
+        log_ram_length = sizeof(log_ram_buffer) - 1;
+        log_ram_buffer[log_ram_length] = '\0';
+        log_ram_truncated = true;
+        mutex_exit(&log_mutex);
+        return;
+    }
+    log_ram_length += (size_t)written;
+
+    if (log_ram_length + 1 >= sizeof(log_ram_buffer)) {
+        log_ram_length = sizeof(log_ram_buffer) - 1;
+        log_ram_buffer[log_ram_length] = '\0';
+        log_ram_truncated = true;
+        mutex_exit(&log_mutex);
+        return;
+    }
+
+    log_ram_buffer[log_ram_length++] = '\n';
+    log_ram_buffer[log_ram_length] = '\0';
+
+    mutex_exit(&log_mutex);
+}
+
+const char *savedata_get_log()
+{
+    return (const char *)(XIP_BASE + LOG_SECTOR_OFFSET);
+}
+
+size_t savedata_log_size()
+{
+    const uint8_t *data = (const uint8_t *)savedata_get_log();
+    size_t size = 0;
+    while ((size < LOG_SECTOR_SIZE) && (data[size] != 0xff) && (data[size] != '\0')) {
+        size++;
+    }
+    return size;
+}
+
+void savedata_log_save()
+{
+    request_log_persist = true;
+}
+
+static void log_persist()
+{
+    static uintptr_t param[2];
+
+    mutex_enter_blocking(&log_mutex);
+    if (log_persisted) {
+        mutex_exit(&log_mutex);
+        return;
+    }
+
+    if (log_ram_length < sizeof(log_ram_buffer)) {
+        log_ram_buffer[log_ram_length] = '\0';
+    }
+
+    if (log_ram_length + 1 < sizeof(log_ram_buffer)) {
+        memset(&log_ram_buffer[log_ram_length + 1], 0xff,
+               sizeof(log_ram_buffer) - (log_ram_length + 1));
+    }
+    log_persisted = true;
+    mutex_exit(&log_mutex);
+
+    param[0] = (uintptr_t)log_ram_buffer;
+    param[1] = LOG_SECTOR_SIZE;
+
+    printf("Program Log %08x ", LOG_SECTOR_OFFSET);
+    if (flash_safe_execute(do_write_log, param, 1000) != PICO_OK) {
+        printf("Failed!\n");
+    } else {
+        printf("Done.\n");
+    }
+}
+
+void savedata_loop()
+{
+    if (requesting_save && (time_us_64() - requesting_time > SAVE_TIMEOUT_US)) {
+        requesting_save = false;
+        if (memcmp(&old_data, &new_data, sizeof(old_data)) == 0) {
+            return;
+        }
+        save_program();
+    }
+
+    if (!log_persisted && request_log_persist) {
+        log_persist();
+    }
 }

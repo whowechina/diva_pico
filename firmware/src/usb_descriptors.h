@@ -18,6 +18,8 @@ enum {
 #define DIVAPICO_PS4_VENDOR_ID 0x1532
 #define DIVAPICO_PS4_PRODUCT_ID 0x0401
 
+void hid_use_ps4(bool enable);
+
 // because they are missing from tusb_hid.h
 #define HID_STRING_INDEX(x) HID_REPORT_ITEM(x, 7, RI_TYPE_LOCAL, 1)
 #define HID_STRING_INDEX_N(x, n) HID_REPORT_ITEM(x, 7, RI_TYPE_LOCAL, n)
