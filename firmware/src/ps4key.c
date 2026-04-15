@@ -609,8 +609,14 @@ void ps4key_process_auth()
     }
 
     size_t offset = 256;
-    memcpy(&signed_payload[offset], key->serial, sizeof(key->serial));
-    offset += sizeof(key->serial);
+    uint8_t serial_bin[16] = {0};
+    for (int i = 0; i < 8; i++) {
+        uint8_t hi = (uint8_t)(key->serial[i * 2    ] - '0');
+        uint8_t lo = (uint8_t)(key->serial[i * 2 + 1] - '0');
+        serial_bin[8 + i] = (uint8_t)((hi << 4) | lo);
+    }
+    memcpy(&signed_payload[offset], serial_bin, 16);
+    offset += 16;
 
     if (mbedtls_rsa_export_raw(&ps4_auth.rsa,
                                &signed_payload[offset], 256,
