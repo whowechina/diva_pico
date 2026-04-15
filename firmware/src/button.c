@@ -11,7 +11,6 @@
 
 #include "hardware/gpio.h"
 #include "hardware/timer.h"
-#include "hardware/pwm.h"
 
 #include "config.h"
 #include "board_defs.h"

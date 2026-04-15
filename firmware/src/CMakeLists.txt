@@ -13,7 +13,7 @@ function(make_firmware board board_def)
     target_include_directories(${board} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
     
     target_link_libraries(${board} PRIVATE
-        pico_multicore pico_stdlib hardware_pio hardware_pwm hardware_flash
+        pico_multicore pico_stdlib hardware_pio hardware_flash
         hardware_adc hardware_i2c hardware_watchdog pico_rand pico_mbedtls
         tinyusb_device tinyusb_board)
 
