@@ -37,6 +37,8 @@
 #include "ps4key.h"
 #include "gesture.h"
 
+#define LOG_SAVE_DELAY_SEC 600
+
 struct __attribute__((packed)) {
     uint16_t buttons; // 16 buttons; see JoystickButtons_t for bit mapping
     uint8_t  HAT;    // HAT switch; one nibble w/ unused nibble
@@ -211,9 +213,7 @@ static void run_lights()
         rainbow_level += (rainbow_level < 168) ? 2 : 1;
     }
 
-    if (time_us_64() > 601 * 1000 * 1000ULL) {
-        rainbow_level = 16;
-    }
+
 
     for (int i = 0; i < zone_num; i++) {
         uint32_t color = rgb32_from_hsv(i * 256 / zone_num + phase, 255, rainbow_level / 2);
@@ -240,7 +240,10 @@ static void core1_init()
 static void core1_loop()
 {
     core1_init();
-    ps4key_core1_loop();
+    while (1) {
+        ps4key_job_loop();
+        sleep_us(1000);
+    }
 }
 
 static void core0_loop()
@@ -252,7 +255,7 @@ static void core0_loop()
 
         cli_run();
     
-        if (time_us_64() > 10 * 60 * 1000 * 1000ULL) {
+        if (time_us_64() > LOG_SAVE_DELAY_SEC * 1000000ULL) {
             savedata_save_log();
         }
 
@@ -374,7 +377,7 @@ void init()
     tusb_init();
     stdio_init_all();
 
-    ps4key_async_init();
+    ps4key_init();
 
     cli_init("diva_pico>", "\n   << Diva Pico Controller >>\n"
                             " https://github.com/whowechina\n\n");

@@ -466,17 +466,6 @@ static void handle_ps4key(int argc, char *argv[])
     printf("PS4 key stored: Serial: %.*s.\n", sizeof(key.serial), key.serial);
 }
 
-static void handle_rsa(int argc, char *argv[])
-{
-    if (argc != 0) {
-        printf("Usage: rsa\n");
-        printf("  Benchmark RSA signing: CRT vs Non-CRT\n");
-        return;
-    }
-
-    ps4key_bench_sign();
-}
-
 static void handle_log(int argc, char *argv[])
 {
     if (argc != 0) {
@@ -512,6 +501,5 @@ void commands_init()
     cli_register("save", handle_save, "Save config to flash.");
     cli_register("factory", handle_factory_reset, "Reset everything to default.");
     cli_register("ps4key", handle_ps4key, "Import or clear serialized PS4 key data.");
-    cli_register("rsa", handle_rsa, "Benchmark RSA: CRT vs Non-CRT signing speed.");
     cli_register("log", handle_log, "Show persisted offline debug log.");
 }

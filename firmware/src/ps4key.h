@@ -31,22 +31,17 @@ typedef struct __attribute__((packed)) {
     uint8_t rsa_qinv[128]; /* q^-1 mod p for CRT */
 } ps4key_t;
 
-#define PS4KEY_PAYLOAD_LENGTH (sizeof(ps4key_t) - offsetof(ps4key_t, serial))
-
 bool ps4key_parse_text(const char *text, ps4key_t *key, const char **error);
 bool ps4key_key_valid(const ps4key_t *key);
 
-void ps4key_async_init(void);
-void ps4key_core1_loop(void);
+void ps4key_init(void);
+void ps4key_job_loop();
+
 void ps4key_process_auth(void);
-void ps4key_reset_auth(void);
 
 uint16_t ps4key_get_report(uint8_t report_id, uint8_t report_type,
                            uint8_t *buffer, uint16_t reqlen);
 void ps4key_set_report(uint8_t report_id, uint8_t report_type,
                        uint8_t const *buffer, uint16_t bufsize);
-
-/* Performance benchmark: compare CRT vs non-CRT RSA signing */
-void ps4key_bench_sign(void);
 
 #endif
