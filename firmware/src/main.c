@@ -216,8 +216,6 @@ static void run_lights()
         rainbow_level += (rainbow_level < 168) ? 2 : 1;
     }
 
-
-
     for (int i = 0; i < zone_num; i++) {
         uint32_t color = rgb32_from_hsv(i * 256 / zone_num + phase, 255, rainbow_level / 2);
         rgb_slider_color(i, touch_bits & (1 << i) ? 0xffffff: color);
@@ -226,13 +224,8 @@ static void run_lights()
 
 static void light_update()
 {
-    static uint64_t next_light = 8000;
-    uint64_t now = time_us_64();
-    if (now >= next_light) {
-        run_lights();
-        rgb_update();
-        next_light = now + 8000;
-    }
+    run_lights();
+    rgb_update();
 }
 
 static void core1_init()
