@@ -605,7 +605,7 @@ static void f0_set_nonce(uint8_t report_id, uint8_t const *buffer, uint16_t bufs
     if (frame.nonce_page == 4) {
         memcpy(&auth_ctx.auth_buffer[frame.nonce_page * 56], frame.data, 32);
         auth_ctx.request_sign = true;
-        savedata_logf("ps4 nonce complete id=%u queued=1", frame.nonce_id);
+        savedata_logf("ps4 nonce complete id=%u", frame.nonce_id);
     } else {
         memcpy(&auth_ctx.auth_buffer[frame.nonce_page * 56], frame.data, 56);
     }

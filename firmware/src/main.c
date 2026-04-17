@@ -54,7 +54,8 @@ struct __attribute__((packed)) {
     uint8_t hat : 4;
     uint8_t buttons_0_3 : 4;
     uint8_t buttons_11_4;
-    uint8_t buttons_counter;
+    uint8_t buttons_12_15 : 4;
+    uint8_t counter : 4;
     uint8_t trigger_l;
     uint8_t trigger_r;
     uint8_t vendor[54];
@@ -156,16 +157,18 @@ static void gen_ns_report()
 static void gen_ps4_report()
 {
     uint16_t ps4_buttons = mapped_buttons;
+
     hid_ps4.left_y = 0x80;
     hid_ps4.right_y = 0x80;
     hid_ps4.buttons_0_3 = ps4_buttons;
     hid_ps4.buttons_11_4 = ps4_buttons >> 4;
-    hid_ps4.buttons_counter = ps4_buttons >> 12;
+    hid_ps4.buttons_12_15 = (ps4_buttons >> 12) & 0x0F;
+    hid_ps4.counter = 0;
     hid_ps4.trigger_l = 0;
     hid_ps4.trigger_r = 0;
 
     uint8_t side_buttons = (raw_buttons >> 5) & 0x03;
-    // HAT: 0-UP, 4-DOWN, 0x0F-CENTER (aligned with GP2040 PS4 mapping)
+    // HAT: 0-UP, 4-DOWN, 0x0F-CENTER
     hid_ps4.hat = side_buttons == 0x01 ? 0 : (side_buttons == 0x02 ? 4 : 0x0F);
 
     gesture_process(touch_mask_raw(), &hid_ps4.left_x, &hid_ps4.right_x);
