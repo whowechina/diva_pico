@@ -74,6 +74,44 @@
             min-width: 800px;
         }
 
+        .serial-connect {
+            margin-bottom: 14px;
+            padding: 18px 24px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: start;
+            gap: 14px;
+        }
+
+        .serial-connect h2 {
+            margin: 0;
+            font-size: 1rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .serial-connect p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .serial-heading {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .serial-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
         .panel-top {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -124,6 +162,13 @@
             color: var(--muted);
             line-height: 1.5;
         }
+        
+        .section .disclaimer {
+            margin: 8px 0 0 0;
+            font-size: 0.92em;
+            color: #a11a1a;
+            opacity: 0.92;
+        }
 
         label {
             display: block;
@@ -162,7 +207,7 @@
         button {
             border: none;
             border-radius: 999px;
-            padding: 14px 88px;
+            padding: 8px 24px;
             font: inherit;
             font-weight: 700;
             cursor: pointer;
@@ -175,12 +220,18 @@
             opacity: 0.96;
         }
 
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+            transform: none;
+            box-shadow: none;
+        }
+
         .primay {
             color: var(--accent-strong);
             background: linear-gradient(135deg, #e6f7f5 0%, #d2f1ed 100%);
             border: 1px solid #b6e2de;
             box-shadow: 0 8px 24px rgba(15, 118, 110, 0.10);
-            padding: 14px 88px;
         }
 
 
@@ -193,6 +244,12 @@
             margin-top: 0;
             margin-bottom: 0;
             text-align: left;
+        }
+
+        .status.serial-status {
+            margin-top: 0;
+            min-height: 20px;
+            font-size: 0.92rem;
         }
 
         .status.warn {
@@ -217,7 +274,7 @@
         }
 
         .output {
-            min-height: 360px;
+            min-height: 372px;
             font-family: "Cascadia Code", "Consolas", monospace;
             white-space: pre-wrap;
             overflow: auto;
@@ -225,9 +282,37 @@
             overflow-wrap: anywhere;
         }
 
+        .output-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
         @media (max-width: 760px) {
             body {
                 padding: 20px 14px 32px;
+            }
+
+            .serial-connect {
+                grid-template-columns: 1fr;
+                align-items: flex-start;
+            }
+
+            .serial-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .button-row {
+                grid-template-columns: 1fr;
+            }
+
+            .button-section {
+                border-right: none;
+                border-top: 1px solid var(--line);
+                justify-content: flex-start;
             }
         }
     </style>
@@ -238,20 +323,33 @@
             <h1>PS4 Key Packer for Diva Pico</h1>
         </section>
 
+        <section class="panel serial-connect">
+            <div class="serial-heading">
+                <h2>Connect to Diva Pico Command-line Port</h2>
+                <div id="serialStatus" class="status serial-status" aria-live="polite"></div>
+            </div>
+            <div class="serial-actions">
+                <button id="connectSerialButton" class="primay" type="button">Select Port</button>
+                <button id="disconnectSerialButton" class="primay" type="button" disabled>Disconnect</button>
+            </div>
+        </section>
+
         <section class="panel panel-main">
             <div class="panel-top">
                 <div class="section">
                     <h2>Input</h2>
-                    <p>Provide the binary signature, the serial, and the RSA private key files.</p>
+                    <p class="disclaimer">
+                        The Diva Pico project will not provide any files or information related to acquiring these files. Do not request them through any communication channel (e.g., Email, Instant Messaging, GitHub Issues, Discord).
+                    </p>
 
-                    <label for="sigFile">signature.bin file</label>
-                    <input id="sigFile" type="file" accept=".bin,application/octet-stream">
+                    <label for="sigFile">Select a signature file</label>
+                    <input id="sigFile" type="file" accept=".bin">
 
-                    <label for="serialFile">serial.txt file</label>
+                    <label for="serialFile">Select a serial file</label>
                     <input id="serialFile" type="file" accept=".txt,text/plain">
 
-                    <label for="pemFile">key.pem file</label>
-                    <input id="pemFile" type="file" accept=".pem,text/plain">
+                    <label for="pemFile">Select a PEM-format RSA key file</label>
+                    <input id="pemFile" type="file" accept=".pem">
 
                     <div id="status" class="status" aria-live="polite"></div>
                     <div id="meta" class="meta"></div>
@@ -269,7 +367,10 @@
                     <button id="packButton" class="primay" type="button">Pack the Files</button>
                 </div>
                 <div class="button-section right">
-                    <button id="copyButton" class="primay" type="button">Copy to Clipboard</button>
+                    <div class="output-actions">
+                        <button id="copyButton" class="primay" type="button">Copy to Clipboard</button>
+                        <button id="saveButton" class="primay" type="button" disabled>Save To Diva Pico</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -298,7 +399,28 @@
         const meta = document.getElementById("meta");
         const packButton = document.getElementById("packButton");
         const copyButton = document.getElementById("copyButton");
+        const saveButton = document.getElementById("saveButton");
+        const connectSerialButton = document.getElementById("connectSerialButton");
+        const disconnectSerialButton = document.getElementById("disconnectSerialButton");
+        const serialStatus = document.getElementById("serialStatus");
         const encoder = new TextEncoder();
+        const WELCOME_MARKER_1 = "<< Diva Pico Controller >>";
+        const WELCOME_MARKER_2 = "ps4key: Import or clear serialized PS4 key data.";
+        const SAVE_OK_MARKER = "PS4 key stored: Serial:";
+        const SERIAL_BUFFER_LIMIT = 200000;
+        const SERIAL_RETRY_MS = 2000;
+
+        let serialPort = null;
+        let serialReader = null;
+        let serialWriter = null;
+        let serialReadLoopRunning = false;
+        let serialTextBuffer = "";
+        let serialHandshakeOk = false;
+        let serialRetryTimer = null;
+        let serialProbeInFlight = false;
+        let manualDisconnectRequested = false;
+        let manualSelectionInProgress = false;
+        let serialAutoProbeToken = 0;
 
 
         function setStatus(kind, message) {
@@ -320,6 +442,78 @@
             }
         }
 
+        function setSerialStatus(kind, message) {
+            serialStatus.className = `status serial-status ${kind}`;
+            serialStatus.textContent = message;
+        }
+
+        function clearSerialStatus() {
+            setSerialStatus("", "");
+        }
+
+        function stopSerialRetryLoop() {
+            if (serialRetryTimer !== null) {
+                window.clearTimeout(serialRetryTimer);
+                serialRetryTimer = null;
+            }
+        }
+
+        function cancelAutoProbeRuns() {
+            serialAutoProbeToken += 1;
+        }
+
+        function formatPortLabel(port) {
+            const info = typeof port.getInfo === "function" ? port.getInfo() : {};
+            const hasVidPid = Number.isInteger(info.usbVendorId) || Number.isInteger(info.usbProductId);
+            if (!hasVidPid) {
+                return "selected";
+            }
+            const vid = Number.isInteger(info.usbVendorId) ? info.usbVendorId.toString(16).padStart(4, "0") : "----";
+            const pid = Number.isInteger(info.usbProductId) ? info.usbProductId.toString(16).padStart(4, "0") : "----";
+            return `USB ${vid}:${pid}`;
+        }
+
+        function getConnectedPortLabel() {
+            if (serialHandshakeOk) {
+                return "Diva Pico";
+            }
+            return "";
+        }
+
+        function showConnectedStatus() {
+            const portLabel = getConnectedPortLabel();
+            if (portLabel) {
+                setSerialStatus("ok", `Connected to ${portLabel}.`);
+            }
+        }
+
+        function scheduleAutoConnectRetry() {
+            if (!navigator.serial || serialPort || manualDisconnectRequested || manualSelectionInProgress || serialRetryTimer !== null) {
+                return;
+            }
+            serialRetryTimer = window.setTimeout(() => {
+                serialRetryTimer = null;
+                autoConnectKnownPorts();
+            }, SERIAL_RETRY_MS);
+        }
+
+        function hasOutput() {
+            return Boolean(output.value && output.value.trim());
+        }
+
+        function updateSerialButtons() {
+            const connected = Boolean(serialPort && serialHandshakeOk);
+            saveButton.disabled = !(connected && hasOutput());
+            copyButton.disabled = !hasOutput();
+            disconnectSerialButton.disabled = !connected;
+        }
+
+        function delay(ms) {
+            return new Promise((resolve) => {
+                window.setTimeout(resolve, ms);
+            });
+        }
+
 
         function normalizePem(text) {
             return text.replace(/\r\n?/g, "\n").trim();
@@ -327,17 +521,17 @@
 
         function assertInputs(serial, pem, sigBytes) {
             if (!sigBytes || sigBytes.length === 0) {
-                throw new Error("Please upload the signature.bin file.");
+                throw new Error("Please upload the signature file.");
             }
             if (sigBytes.length !== SIG_LENGTH) {
-                throw new Error(`signature.bin must be exactly ${SIG_LENGTH} bytes.`);
+                throw new Error(`signature file must be exactly ${SIG_LENGTH} bytes.`);
             }
             if (!/^\d{16}$/.test(serial)) {
-                throw new Error("serial.txt must be a 16-digit decimal string.");
+                throw new Error("serial file must be a 16-digit decimal string.");
             }
             if (!pem.includes("-----BEGIN RSA PRIVATE KEY-----") ||
                 !pem.includes("-----END RSA PRIVATE KEY-----")) {
-                throw new Error("key.pem must contain BEGIN/END RSA PRIVATE KEY markers.");
+                throw new Error("key file must contain BEGIN/END RSA PRIVATE KEY markers.");
             }
         }
 
@@ -532,16 +726,11 @@
             try {
 
                 // Pre-file selection validation
-                if (!sigFileInput.files || !sigFileInput.files[0]) {
-                    setStatus("error", "Please select sig.bin file.");
-                    return;
-                }
-                if (!serialFileInput.files || !serialFileInput.files[0]) {
-                    setStatus("error", "Please select serial.txt file.");
-                    return;
-                }
-                if (!pemFileInput.files || !pemFileInput.files[0]) {
-                    setStatus("error", "Please select key.pem file.");
+                if (!sigFileInput.files || !sigFileInput.files[0] ||
+                    !serialFileInput.files || !serialFileInput.files[0] ||
+                    !pemFileInput.files || !pemFileInput.files[0]
+                ) {
+                    setStatus("error", "Please select all required files.");
                     return;
                 }
 
@@ -551,15 +740,15 @@
 
 
                 if (!sigBytes || sigBytes.length === 0) {
-                    setStatus("error", "sig.bin file read failed or empty.");
+                    setStatus("error", "signature file read failed or empty.");
                     return;
                 }
                 if (!serialText || serialText.trim().length === 0) {
-                    setStatus("error", "serial.txt file read failed or empty.");
+                    setStatus("error", "serial file read failed or empty.");
                     return;
                 }
                 if (!pemText || pemText.trim().length === 0) {
-                    setStatus("error", "key.pem file read failed or empty.");
+                    setStatus("error", "key file read failed or empty.");
                     return;
                 }
 
@@ -571,16 +760,284 @@
                 const packed = packPayload(serial, sigBytes, rsa);
                 output.value = packed;
                 setStatus("ok", `Packed successfully, total ${packed.length} chars.`);
-                setMeta([
-                    `Serialized key version: V${VERSION} only`,
-                    `PEM format: ${rsa.pemFormat}`,
-                    `PEM version field: ${rsa.pemVersion} (${rsa.pemVersion === 0 ? "two-prime RSA" : "multi-prime RSA"})`,
-                    `CRT parameter source: ${rsa.crtSource}`,
-                ]);
+                setOutputStatus("", "");
+                setMeta([]);
+                updateSerialButtons();
             } catch (error) {
                 output.value = "";
                 setMeta([]);
                 setStatus("error", error instanceof Error ? error.message : String(error));
+                setOutputStatus("", "");
+                updateSerialButtons();
+            }
+        }
+
+        async function closeSerialConnection(message = "", kind = "", options = {}) {
+            const shouldRetry = options.shouldRetry === true;
+            serialHandshakeOk = false;
+            stopSerialRetryLoop();
+            updateSerialButtons();
+
+            if (serialReader) {
+                try {
+                    await serialReader.cancel();
+                } catch (error) {
+                    // Ignore reader cancel errors during disconnect.
+                }
+                try {
+                    serialReader.releaseLock();
+                } catch (error) {
+                    // Ignore lock release errors.
+                }
+                serialReader = null;
+            }
+
+            if (serialWriter) {
+                try {
+                    serialWriter.releaseLock();
+                } catch (error) {
+                    // Ignore lock release errors.
+                }
+                serialWriter = null;
+            }
+
+            if (serialPort) {
+                try {
+                    await serialPort.close();
+                } catch (error) {
+                    // Ignore close errors for already-disconnected devices.
+                }
+            }
+
+            serialPort = null;
+            serialReadLoopRunning = false;
+            serialTextBuffer = "";
+            if (message) {
+                setSerialStatus(kind, message);
+            } else {
+                clearSerialStatus();
+            }
+            updateSerialButtons();
+            if (shouldRetry) {
+                scheduleAutoConnectRetry();
+            }
+        }
+
+        async function serialReadLoop(port) {
+            if (!port.readable) {
+                return;
+            }
+
+            const decoder = new TextDecoder();
+            serialReader = port.readable.getReader();
+            serialReadLoopRunning = true;
+
+            try {
+                while (true) {
+                    const readResult = await serialReader.read();
+                    if (readResult.done) {
+                        break;
+                    }
+                    if (readResult.value) {
+                        serialTextBuffer += decoder.decode(readResult.value, { stream: true });
+                        if (serialTextBuffer.length > SERIAL_BUFFER_LIMIT) {
+                            serialTextBuffer = serialTextBuffer.slice(-Math.floor(SERIAL_BUFFER_LIMIT / 2));
+                        }
+                    }
+                }
+            } catch (error) {
+                // Reader errors are handled by the disconnect cleanup below.
+            } finally {
+                serialReadLoopRunning = false;
+                if (serialReader) {
+                    try {
+                        serialReader.releaseLock();
+                    } catch (error) {
+                        // Ignore release failures during teardown.
+                    }
+                    serialReader = null;
+                }
+
+                if (serialPort === port) {
+                    await closeSerialConnection("", "", { shouldRetry: !manualDisconnectRequested });
+                }
+            }
+        }
+
+        async function waitForText(marker, timeoutMs, startIndex = 0) {
+            const deadline = Date.now() + timeoutMs;
+            while (Date.now() < deadline) {
+                if (serialTextBuffer.slice(startIndex).includes(marker)) {
+                    return true;
+                }
+                if (!serialPort) {
+                    return false;
+                }
+                await delay(80);
+            }
+            return serialTextBuffer.slice(startIndex).includes(marker);
+        }
+
+        function hasRequiredWelcome(text) {
+            return text.includes(WELCOME_MARKER_1) && text.includes(WELCOME_MARKER_2);
+        }
+
+        async function openAndVerifySerialPort(port, options = {}) {
+            const reportErrors = options.reportErrors !== false;
+            const showProgress = options.showProgress !== false;
+            const probeToken = options.probeToken;
+
+            if (probeToken !== undefined && probeToken !== serialAutoProbeToken) {
+                return false;
+            }
+
+            if (serialPort && serialPort !== port) {
+                await closeSerialConnection();
+            }
+
+            stopSerialRetryLoop();
+            serialTextBuffer = "";
+            if (showProgress) {
+                setSerialStatus("", `Connecting to ${formatPortLabel(port)} port...`);
+            } else {
+                clearSerialStatus();
+            }
+
+            await port.open({
+                baudRate: 115200,
+                dataBits: 8,
+                stopBits: 1,
+                parity: "none",
+                flowControl: "none",
+                bufferSize: 4096,
+            });
+
+            if (probeToken !== undefined && probeToken !== serialAutoProbeToken) {
+                await port.close();
+                return false;
+            }
+
+            serialPort = port;
+            if (!serialPort.writable) {
+                throw new Error("Selected port is not writable.");
+            }
+            serialWriter = serialPort.writable.getWriter();
+            serialReadLoop(port);
+            updateSerialButtons();
+
+            const handshakeOk = await waitForText(WELCOME_MARKER_2, 2400, 0) && hasRequiredWelcome(serialTextBuffer);
+            if (!handshakeOk) {
+                await closeSerialConnection(reportErrors ? "Connected port is not Diva Pico CLI Port." : "", reportErrors ? "error" : "");
+                return false;
+            }
+
+            serialHandshakeOk = true;
+            showConnectedStatus();
+            updateSerialButtons();
+            return true;
+        }
+
+        async function autoConnectKnownPorts() {
+            if (!navigator.serial) {
+                setSerialStatus("error", "Web Serial is not supported by this browser.");
+                connectSerialButton.disabled = true;
+                disconnectSerialButton.disabled = true;
+                saveButton.disabled = true;
+                copyButton.disabled = !hasOutput();
+                return;
+            }
+
+            if (serialPort || manualDisconnectRequested || serialProbeInFlight) {
+                return;
+            }
+
+            serialProbeInFlight = true;
+            const probeToken = ++serialAutoProbeToken;
+
+            try {
+                const ports = await navigator.serial.getPorts();
+                if (!ports.length) {
+                    scheduleAutoConnectRetry();
+                    return;
+                }
+
+                for (const port of ports) {
+                    if (probeToken !== serialAutoProbeToken || serialPort || manualDisconnectRequested || manualSelectionInProgress) {
+                        return;
+                    }
+                    try {
+                        clearSerialStatus();
+                        const ok = await openAndVerifySerialPort(port, {
+                            reportErrors: false,
+                            showProgress: false,
+                            probeToken,
+                        });
+                        if (ok) {
+                            return;
+                        }
+                    } catch (error) {
+                        await closeSerialConnection();
+                    }
+                }
+
+                scheduleAutoConnectRetry();
+            } catch (error) {
+                scheduleAutoConnectRetry();
+            } finally {
+                serialProbeInFlight = false;
+            }
+        }
+
+        async function chooseSerialPort() {
+            if (!navigator.serial) {
+                setSerialStatus("error", "Web Serial is not supported by this browser.");
+                return;
+            }
+
+            try {
+                manualDisconnectRequested = false;
+                manualSelectionInProgress = true;
+                stopSerialRetryLoop();
+                cancelAutoProbeRuns();
+                const port = await navigator.serial.requestPort();
+                await openAndVerifySerialPort(port, {
+                    reportErrors: true,
+                    showProgress: true,
+                });
+            } catch (error) {
+                if (error && error.name === "NotFoundError") {
+                    scheduleAutoConnectRetry();
+                    return;
+                }
+                await closeSerialConnection(error instanceof Error ? error.message : String(error), "error");
+                scheduleAutoConnectRetry();
+            } finally {
+                manualSelectionInProgress = false;
+            }
+        }
+
+        async function saveToDivaPico() {
+            if (!output.value) {
+                setOutputStatus("warn", "Please pack key data first.");
+                return;
+            }
+            if (!serialPort || !serialWriter || !serialHandshakeOk) {
+                setOutputStatus("warn", "Diva Pico CLI Port is not ready.");
+                return;
+            }
+
+            try {
+                setOutputStatus("warn", "Saving output to Diva Pico...");
+                const startIndex = serialTextBuffer.length;
+                const command = `ps4key ${output.value}`;
+                await serialWriter.write(encoder.encode(`${command}\r\n`));
+                const ok = await waitForText(SAVE_OK_MARKER, 8000, startIndex);
+                if (!ok) {
+                    throw new Error("Device did not confirm key storage.");
+                }
+                setOutputStatus("ok", "Output saved to Diva Pico.");
+            } catch (error) {
+                setOutputStatus("error", error instanceof Error ? error.message : String(error));
             }
         }
 
@@ -599,8 +1056,32 @@
             }
         }
 
+        if (navigator.serial) {
+            navigator.serial.addEventListener("disconnect", async (event) => {
+                const disconnectedPort = event.target || event.port;
+                if (serialPort && disconnectedPort === serialPort) {
+                    await closeSerialConnection("", "", { shouldRetry: !manualDisconnectRequested });
+                }
+            });
+
+            navigator.serial.addEventListener("connect", () => {
+                if (!serialPort && !manualDisconnectRequested) {
+                    autoConnectKnownPorts();
+                }
+            });
+        }
+
         packButton.addEventListener("click", doPack);
         copyButton.addEventListener("click", copyOutput);
+        saveButton.addEventListener("click", saveToDivaPico);
+        connectSerialButton.addEventListener("click", chooseSerialPort);
+        disconnectSerialButton.addEventListener("click", async () => {
+            manualDisconnectRequested = true;
+            await closeSerialConnection();
+        });
+
+        updateSerialButtons();
+        autoConnectKnownPorts();
     </script>
 </body>
 </html>
