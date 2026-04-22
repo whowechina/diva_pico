@@ -15,7 +15,7 @@ enum {
     REPORT_ID_LED_COMPRESSED = 11,
 };
 
-#define DIVAPICO_PS4_VENDOR_ID 0x1532
+#define DIVAPICO_PS4_VENDOR_ID  0x1532
 #define DIVAPICO_PS4_PRODUCT_ID 0x0401
 
 void hid_use_ps4(bool enable);

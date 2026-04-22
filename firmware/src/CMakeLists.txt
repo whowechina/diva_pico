@@ -1,7 +1,7 @@
 function(make_firmware board board_def)
     add_executable(${board}
         main.c slider.c rgb.c button.c savedata.c config.c commands.c
-        cli.c mpr121.c hebtn.c lzfx.c usb_descriptors.c gesture.c
+        cli.c mpr121.c hebtn.c lzfx.c usb_descriptors.c gesture.c hid.c
         ps4key.c)
     target_compile_definitions(${board} PUBLIC ${board_def})
     pico_enable_stdio_usb(${board} 1)

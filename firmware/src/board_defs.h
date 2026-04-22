@@ -14,7 +14,7 @@
 #define RGB_ORDER GRB // or RGB
 
 #define RGB_BUTTON_MAP { 3, 2, 1, 0, 4 }
-#define BUTTON_DEF { 12, 11, 10, 9, 13, 1, 0} // Main * 4, Start, Aux * 2
+#define BUTTON_DEF { 12, 11, 10, 9, 1, 0, 13 } // Main * 4, R1, R2, L1
 
 /* A0, A1, A2, ... */
 #define HALL_KEY_MUX_ADDRS { 19, 20 }

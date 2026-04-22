@@ -28,6 +28,7 @@
 #include "config.h"
 #include "cli.h"
 #include "commands.h"
+#include "hid.h"
 
 #include "slider.h"
 #include "rgb.h"
@@ -39,99 +40,9 @@
 
 #define LOG_SAVE_DELAY_SEC 600
 
-struct __attribute__((packed)) {
-    uint16_t buttons; // 16 buttons; see JoystickButtons_t for bit mapping
-    uint8_t  HAT;    // HAT switch; one nibble w/ unused nibble
-    uint32_t axis;  // slider touch data
-    uint8_t  VendorSpec;
-} hid_ns, sent_hid_ns;
-
-struct __attribute__((packed)) {
-    uint8_t left_x;
-    uint8_t left_y;
-    uint8_t right_x;
-    uint8_t right_y;
-    uint8_t hat : 4;
-    uint8_t buttons_0_3 : 4;
-    uint8_t buttons_11_4;
-    uint8_t buttons_12_15 : 4;
-    uint8_t counter : 4;
-    uint8_t trigger_l;
-    uint8_t trigger_r;
-    uint8_t vendor[54];
-} hid_ps4, sent_hid_ps4;
-
-void report_usb_hid()
-{
-    static uint64_t last_report_joy = 0;
-
-    if (!tud_hid_ready()) {
-        return;
-    }
-
-    uint64_t now = time_us_64();
-
-    if (diva_runtime.hid_ps4) {
-        if ((memcmp(&hid_ps4, &sent_hid_ps4, sizeof(hid_ps4)) != 0) ||
-            (now - last_report_joy >= 2000)) {
-            if (tud_hid_report(REPORT_ID_JOYSTICK, &hid_ps4, sizeof(hid_ps4))) {
-                sent_hid_ps4 = hid_ps4;
-            }
-            last_report_joy = now;
-        }
-    } else {
-        hid_ns.HAT = 0x08;
-        hid_ns.VendorSpec = 0;
-        if ((memcmp(&hid_ns, &sent_hid_ns, sizeof(hid_ns)) != 0) ||
-            (now - last_report_joy >= 2000)) {
-            if (tud_hid_report(0, &hid_ns, sizeof(hid_ns))) {
-                sent_hid_ns = hid_ns;
-            }
-            last_report_joy = now;
-        }
-    }
-}
-
 static uint16_t unified_button_read()
 {
     return button_read() | hebtn_read();
-}
-
-const static int8_t button_maps[4][7] = {
-    { 3, 0, 1, 2, 12, 8, 9 },
-    { 0, 3, 2, 1, 12, 8, 9 }, // Steam
-    { 3, 0, 1, 2, 9, 12, 8 }, // Arcade
-    { 3, 0, 1, 2, 12, -1, -1 }, // PS4
-};
-
-static uint16_t raw_buttons;
-static uint16_t mapped_buttons;
-
-static void proc_buttons()
-{
-    raw_buttons = unified_button_read();
-    const int8_t *map = button_maps[diva_cfg->hid.joy_map % 4];
-
-    mapped_buttons = 0;
-    for (int i = 0; i < 7; i++) {
-        if (map[i] >= 0) {
-            mapped_buttons |= (raw_buttons & (1 << i)) ? (1 << map[i]) : 0;
-        }
-    }
-}
-
-static uint32_t touch_axis_bits()
-{
-    uint32_t axis = 0;
-
-    int zone_num = slider_zone_num();
-    for (int i = 0; i < zone_num; i++) {
-        if (slider_touched(zone_num - 1 - i)) {
-            uint32_t bits = zone_num > 16 ? (1 << i) : 0x03 << (i * 2);
-            axis |= bits;
-        }
-    }
-    return axis;
 }
 
 static uint32_t touch_mask_raw(void)
@@ -148,42 +59,6 @@ static uint32_t touch_mask_raw(void)
     return mask;
 }
 
-static void gen_ns_report()
-{
-    hid_ns.axis = touch_axis_bits() ^ 0x80808080;
-    hid_ns.buttons = mapped_buttons;
-}
-
-static void gen_ps4_report()
-{
-    uint16_t ps4_buttons = mapped_buttons;
-
-    hid_ps4.left_y = 0x80;
-    hid_ps4.right_y = 0x80;
-    hid_ps4.buttons_0_3 = ps4_buttons;
-    hid_ps4.buttons_11_4 = ps4_buttons >> 4;
-    hid_ps4.buttons_12_15 = (ps4_buttons >> 12) & 0x0F;
-    hid_ps4.counter = 0;
-    hid_ps4.trigger_l = 0;
-    hid_ps4.trigger_r = 0;
-
-    uint8_t side_buttons = (raw_buttons >> 5) & 0x03;
-    // HAT: 0-UP, 4-DOWN, 0x0F-CENTER
-    hid_ps4.hat = side_buttons == 0x01 ? 0 : (side_buttons == 0x02 ? 4 : 0x0F);
-
-    gesture_process(touch_mask_raw(), &hid_ps4.left_x, &hid_ps4.right_x);
-} 
-
-static void gen_hid_report()
-{
-    proc_buttons();
-    if (diva_runtime.hid_ps4) {
-        gen_ps4_report();
-    } else {
-        gen_ns_report();
-    }
-}
-
 static void run_lights()
 {
     uint32_t button_colors[] = { 
@@ -194,14 +69,17 @@ static void run_lights()
         rgb32(0xf0, 0x50, 0x00, false)
     };
 
+    uint64_t now = time_us_64();
+
     uint16_t buttons = unified_button_read();
     for (int i = 0; i < 5; i++) {
         bool pressed = buttons & (1 << i);
-        uint32_t color = pressed ? button_colors[i] : 0x505050;
+        uint32_t shifted_color = ((now >> 17) % 3) ? 0x7f7f00 : 0x1f1f00;
+        uint32_t off_color = hid_shift_activated() ? shifted_color : 0x505050;
+        uint32_t color = pressed ? button_colors[i] : off_color;
         rgb_button_color(i, color);
     }
 
-    uint64_t now = time_us_64();
 
     static int rainbow_level = 0;
 
@@ -262,11 +140,10 @@ static void core0_loop()
         slider_update();
         hebtn_update();
 
-        light_update();
-    
-        gen_hid_report();
-        report_usb_hid();
+        hid_update(unified_button_read(), touch_mask_raw());
 
+        light_update();
+   
         next_frame += 1000;
         sleep_until(next_frame);
     }
@@ -296,23 +173,9 @@ void tud_resume_cb(void)
 /* if certain key pressed when booting, enter update mode */
 static void update_check()
 {
-    const uint8_t pins[] = BUTTON_DEF;
-    int button_num = count_of(pins);
-    bool all_pressed = true;
-    for (int i = button_num - 2; i < button_num; i++) {
-        uint8_t gpio = pins[i];
-        gpio_init(gpio);
-        gpio_set_function(gpio, GPIO_FUNC_SIO);
-        gpio_set_dir(gpio, GPIO_IN);
-        gpio_pull_up(gpio);
-        sleep_ms(1);
-        if (gpio_get(gpio)) {
-            all_pressed = false;
-            break;
-        }
-    }
-
-    if (all_pressed) {
+    button_update();
+    uint16_t buttons = button_read();
+    if (((buttons >> 4) & 0x03) == 0x03) {
         sleep_ms(100);
         reset_usb_boot(0, 2);
         return;
@@ -333,13 +196,9 @@ static void keymap_check()
         diva_cfg->hid.joy_map = 2;
     } else if (buttons == 0x08) {
         diva_cfg->hid.joy_map = 3;
-    } else {
-        return;
     }
 
-    diva_runtime.hid_ps4 = (diva_cfg->hid.joy_map == 3);
-    hid_use_ps4(diva_runtime.hid_ps4);
-
+    hid_apply_mode();
     config_changed();
 }
 
@@ -348,6 +207,7 @@ void init()
     sleep_ms(50);
     set_sys_clock_khz(180000, true);
 
+    button_init();
     update_check();
 
     config_init();
@@ -357,17 +217,12 @@ void init()
     rgb_init();
     rgb_set_half_mode(slider_zone_num() <= 16);
 
-    button_init();
     hebtn_init(diva_cfg->hall.cali_up, diva_cfg->hall.cali_down,
                diva_cfg->hall.trig_on, diva_cfg->hall.trig_off);
 
     keymap_check();
 
-    diva_runtime.hid_ps4 = (diva_cfg->hid.joy_map == 3);
-    hid_use_ps4(diva_runtime.hid_ps4);
-
     gesture_reset();
-    gesture_set_latch(100);
 
     board_init();
     tusb_init();
@@ -396,17 +251,6 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id,
                                hid_report_type_t report_type, uint8_t *buffer,
                                uint16_t reqlen)
 {
-    if (diva_runtime.hid_ps4) {
-        if (report_type != HID_REPORT_TYPE_FEATURE) {
-            uint16_t resp_len = sizeof(hid_ps4);
-            if (resp_len > reqlen) {
-                resp_len = reqlen;
-            }
-            memcpy(buffer, &hid_ps4, resp_len);
-            return resp_len;
-        }
-        return ps4key_get_report(report_id, report_type, buffer, reqlen);
-    }
     printf("Get from USB %d-%d\n", report_id, report_type);
     return 0;
 }
