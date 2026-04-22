@@ -23,18 +23,22 @@
 #define MAX_REGIONS 12 // Per-frame extracted regions.
 #define MAX_CLUSTERS 12 // Living clusters tracked across frames.
 
-#define REGION_GAP_SIZE 1 // Maximum gap size (in electrodes) allowed inside one region.
-#define MATCH_MAX_DIST_Q4 56 // Max cluster-to-region match distance in Q4 units.
+#define REGION_GAP_SIZE 2 // Maximum gap size (in electrodes) allowed inside one region.
+#define MATCH_MAX_DIST_Q4 80 // Max cluster-to-region match distance in Q4 units.
 
-#define DEBOUNCE_SET_FRAMES 4
-#define DEBOUNCE_RESET_FRAMES 50
+#define DEBOUNCE_SET_FRAMES 2
+#define DEBOUNCE_RESET_FRAMES 10
 
-#define SEQ_MIN_STEPS 3 // Required consecutive +/-1 index moves to confirm direction.
-#define SEQ_TIMEOUT_FRAMES 200 // Max frames allowed between sequential steps.
-#define DEATH_HOLD_FRAMES 100 // Cluster death delay.
+#define LATCH_FRAMES 100
+
+#define SEQ_MIN_STEPS 2 // Required consecutive +/-1 index moves to confirm direction.
+#define SEQ_TIMEOUT_FRAMES 100 // Max frames allowed between sequential steps.
+#define DEATH_HOLD_FRAMES 50 // Cluster death delay.
 
 #define AXIS_CENTER 0x80
 #define AXIS_OFFSET 100 // Signed offset from center when steering left/right.
+
+static uint16_t total_zone_num = 32;
 
 // A region is a contiguous (or gap-bridged) set of active electrodes in one frame.
 // Q4 units are used for more precise center position and distance calculation.
@@ -68,7 +72,6 @@ static uint32_t db_state;
 static int db_cnt[ELEC_COUNT];
 
 static bool debug_cluster;
-static int latch_frames = 100;
 
 static int hold_left_dir;
 static int hold_right_dir;
@@ -162,7 +165,7 @@ static int q4_to_idx(int q4)
     return (q4 + 8) / 16;
 }
 
-static int sgn16(int x)
+static int sign(int x)
 {
     return (x > 0) - (x < 0);
 }
@@ -182,7 +185,7 @@ static void update_seq(cluster_t *c)
 
     int diff = idx - c->last_idx;
     int ad = abs(diff);
-    int sd = sgn16(diff);
+    int sd = sign(diff);
 
     if (ad == 1 && c->seq_age <= SEQ_TIMEOUT_FRAMES) {
         if (sd == c->seq_dir) {
@@ -225,7 +228,9 @@ static void assign_slot_if_needed(cluster_t *c)
         }
     }
 
-    if (c->center_q4 < (16 * 16)) {
+    int mid_q4 = (total_zone_num * 16) / 2;
+
+    if (c->center_q4 < mid_q4) {
         if (!left_used) {
             c->slot = 0;
         } else if (!right_used) {
@@ -373,7 +378,7 @@ static void hold_axis(int in_l, int in_r, int *out_l, int *out_r)
 {
     if (in_l != 0) {
         hold_left_dir = in_l;
-        hold_left_frames = latch_frames;
+        hold_left_frames = LATCH_FRAMES;
     } else if (hold_left_frames > 0) {
         hold_left_frames--;
     } else {
@@ -382,7 +387,7 @@ static void hold_axis(int in_l, int in_r, int *out_l, int *out_r)
 
     if (in_r != 0) {
         hold_right_dir = in_r;
-        hold_right_frames = latch_frames;
+        hold_right_frames = LATCH_FRAMES;
     } else if (hold_right_frames > 0) {
         hold_right_frames--;
     } else {
@@ -427,8 +432,10 @@ static void debug_print(void)
     }
 }
 
-void gesture_reset(void)
+void gesture_init(uint16_t zone_num)
 {
+    total_zone_num = zone_num;
+
     memset(clusters, 0, sizeof(clusters));
     next_id = 1;
 
@@ -439,11 +446,6 @@ void gesture_reset(void)
     hold_right_dir = 0;
     hold_left_frames = 0;
     hold_right_frames = 0;
-}
-
-void gesture_set_latch(int frames)
-{
-    latch_frames = (frames == 0) ? 1 : frames;
 }
 
 void gesture_set_debug_cluster(bool enable)

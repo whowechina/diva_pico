@@ -222,7 +222,7 @@ void init()
 
     keymap_check();
 
-    gesture_reset();
+    gesture_init(slider_zone_num());
 
     board_init();
     tusb_init();
