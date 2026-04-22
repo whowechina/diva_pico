@@ -148,9 +148,13 @@ https://discord.gg/M8f2PPQFEA
 * 全新烧录的话，按住 BOOTSEL 按钮，然后连接 USB 到 PC，会出现一个名为 "RPI-RP2" 的磁盘。将 UF2 固件拖入即可。Divia Pico 的底部有一个小孔，它正对着 BOOTSEL 按钮。
 * 固件提供了命令行配置功能，你可以使用这个 Web Serial Terminal 来连接 Diva Pico 的 USB 串口。（提示：输入 "?" 可以获得帮助）  
   https://googlechromelabs.github.io/serial-terminal/
-* 你可以使用下面两种方法来切换预设的按键映射。
-  * 插入 USB 时按住三角、方块或者叉叉键（只按一个键），分别会切换到适合 Nintendo Switch、Steam 和 Arcade 版本的按键映射。
+* 你可以使用下面两种方法来切换预设的按键模式。
+  * 插入 USB 时按住三角、方块、叉叉键或圆圈键（只按一个键），可分别切换到 Nintendo Switch、PC Steam、Arcade 和 PlayStation 的按键模式。
   * 在命令行界面使用 `keymap` 命令。
+* 在 Nintendo Switch、PC Steam 和 PlayStation 模式下，左辅助按钮可作为 "SHIFT" 使用，会改变其余 6 个按钮的功能。
+* 在 PlayStation 模式下，如果缺少密钥相关文件，主机会在 8 分钟后断开控制器输入。你可以使用以下工具设置 PS 密钥。  
+  https://whowechina.github.io/diva_pico/tools/ps4key_packer.html
+  * **注意** Diva Pico 项目不会提供任何与获取这些文件相关的文件或信息。请不要通过任何通信渠道（例如电子邮件、即时消息、GitHub Issues、Discord）索取。
 
 ## CAD 源文件
 我使用 OnShape 免费订阅。它很强大，但不能将原始设计存档到本地，所以我只能在这里分享链接。STL/DXF/DWG 文件是从这个在线文档导出的。  

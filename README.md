@@ -153,10 +153,13 @@ You need **6x M3*10mm regular screws** to fix all things.
 * For the new build, hold the BOOTSEL button while connect the USB to a PC, there will be a disk named "RPI-RP2" showed up. Drag the UF2 firmware binary file into it. That's it. There's a small hole at the bottom side of the Diva Pico, it is facing right to the BOOTSEL button.
 * It has a command line to do configuration. You can use this Web Serial Terminal to connect to the USB serial port of the Diva Pico. (Note: "?" is for help)  
   https://googlechromelabs.github.io/serial-terminal/  
-* You can switch key mapping presets using either of the following methods:
-  * Hold Triangle, Square, or Cross (just one button) while plugging in the USB cable for Nintendo Switch, Steam, and Arcade, respectively.
+* You can switch key mapping mode using either of the following methods:
+  * Hold Triangle, Square, Cross, or Circle (just one button) while plugging in the USB cable to switch to Nintendo Switch, PC Steam, Arcade, and PlayStation mode, respectively.
   * Use the `keymap` command in the command line interface.
-
+* In Nintendo Switch, PC Steam, and PlayStation modes, the left auxiliary button is used as a "SHIFT" key, changing the functions of the other six buttons.
+* In PlayStation mode, if key-related files are missing, the console will disconnect controller input after 8 minutes. You can use the following tool to set a PS key.  
+  https://whowechina.github.io/diva_pico/tools/ps4key_packer.html
+  * **Note** The Diva Pico project will not provide any files or information related to acquiring these files. Do not request them through any communication channel (e.g., Email, Instant Messaging, GitHub Issues, Discord).
 
 ## CAD Source File
 I'm using OnShape free subscription. It's powerful but it can't archive original designs to local, so I can only share the link here. STL/DXF/DWG files are exported from this online document.  
