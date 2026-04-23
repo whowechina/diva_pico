@@ -89,7 +89,7 @@ static const int8_t button_maps[4][13] = {
 
     // Steam: different B1-B4 mapping
     {
-        NS_B_X, NS_B_Y, NS_B_B, NS_B_A, NS_B_L, NS_B_R, L1_SHIFT,
+        NS_B_Y, NS_B_X, NS_B_A, NS_B_B, NS_B_L, NS_B_R, L1_SHIFT,
         HAT_LEFT, HAT_UP, HAT_DOWN, HAT_RIGHT, NS_B_HOME, NS_B_PLUS
     },
 
