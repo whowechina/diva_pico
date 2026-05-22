@@ -7,5 +7,7 @@
 void hid_update(uint16_t buttons, uint32_t touch);
 bool hid_shift_activated(void);
 void hid_apply_mode(void);
+uint16_t hid_get_report(uint8_t report_id, uint8_t report_type,
+						uint8_t *buffer, uint16_t reqlen);
 
 #endif

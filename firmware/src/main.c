@@ -251,8 +251,7 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id,
                                hid_report_type_t report_type, uint8_t *buffer,
                                uint16_t reqlen)
 {
-    printf("Get from USB %d-%d\n", report_id, report_type);
-    return 0;
+    return hid_get_report(report_id, report_type, buffer, reqlen);
 }
 
 // Invoked when received SET_REPORT control request or

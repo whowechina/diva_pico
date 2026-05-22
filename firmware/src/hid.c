@@ -244,3 +244,22 @@ void hid_apply_mode(void)
     diva_runtime.hid_ps4 = (diva_cfg->hid.joy_map == 3);
     hid_use_ps4(diva_runtime.hid_ps4);
 }
+
+uint16_t hid_get_report(uint8_t report_id, uint8_t report_type,
+                        uint8_t *buffer, uint16_t reqlen)
+{
+    if (!diva_runtime.hid_ps4) {
+        return 0;
+    }
+
+    if (report_type != HID_REPORT_TYPE_FEATURE) {
+        uint16_t resp_len = sizeof(hid_ps4);
+        if (resp_len > reqlen) {
+            resp_len = reqlen;
+        }
+        memcpy(buffer, &hid_ps4, resp_len);
+        return resp_len;
+    }
+
+    return ps4key_get_report(report_id, report_type, buffer, reqlen);
+}
