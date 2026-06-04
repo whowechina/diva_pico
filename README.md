@@ -154,7 +154,7 @@ You need **6x M3*10mm regular screws** to fix all things.
 * It has a command line to do configuration. You can use this Web Serial Terminal to connect to the USB serial port of the Diva Pico. (Note: "?" is for help)  
   https://googlechromelabs.github.io/serial-terminal/  
 * You can switch key mapping mode using either of the following methods:
-  * Hold Triangle, Square, Cross, or Circle (just one button) while plugging in the USB cable to switch to Nintendo Switch, PC Steam, Arcade, and PlayStation mode, respectively.
+  * Hold Triangle, Square, Cross, Circle or Cross+Circle while plugging in the USB cable to switch to Nintendo Switch, PC Steam, Arcade, PlayStation and PlayStation Arcade mode, respectively.
   * Use the `keymap` command in the command line interface.
 * In Nintendo Switch, PC Steam, and PlayStation modes, the left auxiliary button is used as a "SHIFT" key, changing the functions of the other six buttons.
 * In PlayStation mode, if key-related files are missing, the console will disconnect controller input after 8 minutes. You can use the following tool to set a PS key.  

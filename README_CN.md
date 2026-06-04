@@ -149,7 +149,7 @@ https://discord.gg/M8f2PPQFEA
 * 固件提供了命令行配置功能，你可以使用这个 Web Serial Terminal 来连接 Diva Pico 的 USB 串口。（提示：输入 "?" 可以获得帮助）  
   https://googlechromelabs.github.io/serial-terminal/
 * 你可以使用下面两种方法来切换预设的按键模式。
-  * 插入 USB 时按住三角、方块、叉叉键或圆圈键（只按一个键），可分别切换到 Nintendo Switch、PC Steam、Arcade 和 PlayStation 的按键模式。
+  * 插入 USB 时按住三角、方块、叉叉、圆圈 或者 叉叉+圆圈键，可分别切换到 Nintendo Switch、PC Steam、街机、PlayStation 和 PlayStation Arcade 的按键模式。
   * 在命令行界面使用 `keymap` 命令。
 * 在 Nintendo Switch、PC Steam 和 PlayStation 模式下，左辅助按钮可作为 "SHIFT" 使用，会改变其余 6 个按钮的功能。
 * 在 PlayStation 模式下，如果缺少密钥相关文件，主机会在 8 分钟后断开控制器输入。你可以使用以下工具设置 PS 密钥。  

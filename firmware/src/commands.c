@@ -70,13 +70,15 @@ static void disp_hid()
 
     int joy = diva_cfg->hid.joy_map % 4;
 
-    const char *key_info = "\0";
+    const char *ps4_key_info = "\0";
+    const char *ps4_mode = "\0";
     if (joy == 3) {
+        ps4_mode = diva_cfg->hid.ps4_arcade ? "-Arcade" : "\0";
         const ps4key_t *key = (const ps4key_t *)savedata_get_global();
-        key_info = ps4key_key_valid(key) ? " (Key loaded)" : " (No key, disconnected every 8 minutes)";
+        ps4_key_info = ps4key_key_valid(key) ? " (Key loaded)" : " (No key, disconnected every 8 minutes)";
     }
 
-    printf("  Keymap: %s%s\n", joy_map[joy], key_info);
+    printf("  Keymap: %s%s%s\n", joy_map[joy], ps4_mode, ps4_key_info);
 }
 
 void handle_display(int argc, char *argv[])
@@ -187,19 +189,35 @@ static void handle_stat(int argc, char *argv[])
 
 static void handle_keymap(int argc, char *argv[])
 {
-    const char *usage = "Usage: keymap <switch|steam|arcade|ps4>\n";
-    if (argc != 1) {
+    const char *usage = "Usage: keymap <switch|steam|arcade>\n"
+                        "       keymap ps4 [arcade]\n";
+
+    if (argc < 1) {
         printf(usage);
         return;
     }
     const char *choices[] = {"switch", "steam", "arcade", "ps4"};
     int match = cli_match_prefix(choices, count_of(choices), argv[0]);
-    if (match < 0) {
+
+    if ((match < 0) ||
+        ((match < 3) && (argc != 1)) ||
+        ((match == 3) && (argc > 2))) {
         printf(usage);
         return;
     }
 
+    bool ps4_arcade = false;
+
+    if ((match == 3) && (argc == 2)) {
+        if (strncasecmp(argv[1], "arcade", strlen(argv[1])) != 0) {
+            printf(usage);
+            return;
+        }
+        ps4_arcade = true;
+    }
+
     diva_cfg->hid.joy_map = match;
+    diva_cfg->hid.ps4_arcade = ps4_arcade;
 
     disp_hid();
     savedata_request(true);

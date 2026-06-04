@@ -26,7 +26,8 @@ typedef struct __attribute__((packed)) {
     } sense;
     struct {
         uint8_t joy_map : 4;
-        uint8_t empty_bits : 4;
+        uint8_t ps4_arcade : 1;
+        uint8_t empty_bits : 3;
         uint8_t reserved[3];
     } hid;
     struct {

@@ -23,10 +23,15 @@ struct __attribute__((packed)) {
 } hid_ns, sent_hid_ns;
 
 struct __attribute__((packed)) {
-    uint8_t left_x;
-    uint8_t left_y;
-    uint8_t right_x;
-    uint8_t right_y;
+    union {
+        struct {
+            uint8_t left_x;
+            uint8_t left_y;
+            uint8_t right_x;
+            uint8_t right_y;
+        };
+        uint32_t axis;
+    };
     uint8_t hat : 4;
     uint8_t buttons_0_3 : 4;
     uint8_t buttons_11_4;
@@ -87,7 +92,7 @@ static const int8_t button_maps[4][13] = {
         HAT_LEFT, HAT_UP, HAT_DOWN, HAT_RIGHT, NS_B_HOME, NS_B_PLUS
     },
 
-    // Steam: different B1-B4 mapping
+    // Steam
     {
         NS_B_Y, NS_B_X, NS_B_A, NS_B_B, NS_B_L, NS_B_R, L1_SHIFT,
         HAT_LEFT, HAT_UP, HAT_DOWN, HAT_RIGHT, NS_B_HOME, NS_B_PLUS
@@ -173,8 +178,6 @@ static void gen_ns_report(void)
 
 static void gen_ps4_report(void)
 {
-    hid_ps4.left_y = 0x80;
-    hid_ps4.right_y = 0x80;
     hid_ps4.counter = 0;
     hid_ps4.trigger_l = 0;
     hid_ps4.trigger_r = 0;
@@ -184,7 +187,13 @@ static void gen_ps4_report(void)
     hid_ps4.buttons_12_15 = (mapped_buttons >> 12) & 0x0F;
     hid_ps4.hat = mapped_hat;
 
-    gesture_process(raw_touch, &hid_ps4.left_x, &hid_ps4.right_x);
+    if (diva_cfg->hid.ps4_arcade) {
+        hid_ps4.axis = mapped_touch ^ 0x80808080;
+    } else {
+        hid_ps4.left_y = 0x80;
+        hid_ps4.right_y = 0x80;
+        gesture_process(raw_touch, &hid_ps4.left_x, &hid_ps4.right_x);
+    }
 }
 
 static void report_usb(void)

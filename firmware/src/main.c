@@ -196,6 +196,13 @@ static void keymap_check()
         diva_cfg->hid.joy_map = 2;
     } else if (buttons == 0x08) {
         diva_cfg->hid.joy_map = 3;
+        diva_cfg->hid.ps4_arcade = false;
+    } else if (buttons == (0x08 | 0x04)) {
+        diva_cfg->hid.joy_map = 3;
+        diva_cfg->hid.ps4_arcade = true;
+
+    } else {
+        return;
     }
 
     hid_apply_mode();
