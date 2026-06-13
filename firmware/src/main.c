@@ -61,25 +61,32 @@ static uint32_t touch_mask_raw(void)
 
 static void run_lights()
 {
-    uint32_t button_colors[] = { 
-        rgb32(0, 0xff, 0, false),
-        rgb32(0xe0, 0x10, 0xe0, false),
-        rgb32(0, 0, 0xff, false),
-        rgb32(0xff, 0, 0, false),
-        rgb32(0xf0, 0x50, 0x00, false)
+    struct {
+        int led;
+        uint32_t color;
+    } button_colors[7] = {
+        {0, rgb32(0, 0xff, 0, false)},
+        {1, rgb32(0xe0, 0x10, 0xe0, false)},
+        {2, rgb32(0, 0, 0xff, false)},
+        {3, rgb32(0xff, 0, 0, false)},
+        {-1, 0},
+        {-1, 0},
+        {4, rgb32(0xf0, 0xf0, 0x00, false)},
     };
 
     uint64_t now = time_us_64();
 
     uint16_t buttons = unified_button_read();
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < count_of(button_colors); i++) {
+        if (button_colors[i].led < 0) {
+            continue;
+        }
         bool pressed = buttons & (1 << i);
         uint32_t shifted_color = ((now >> 17) % 3) ? 0x7f7f00 : 0x1f1f00;
         uint32_t off_color = hid_shift_activated() ? shifted_color : 0x505050;
-        uint32_t color = pressed ? button_colors[i] : off_color;
-        rgb_button_color(i, color);
+        uint32_t color = pressed ? button_colors[i].color : off_color;
+        rgb_button_color(button_colors[i].led, color);
     }
-
 
     static int rainbow_level = 0;
 
