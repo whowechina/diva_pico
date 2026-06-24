@@ -70,28 +70,26 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
   Be aware that desoldering and soldering large SMD components is a challenging task. It carries the risk of damaging the component or the PCB board. Patience and caution are crucial. Look at the schematics and PCB design files and ask help from community first. Questioning the integrity of these components should be your last resort.
 
 ### PCB
-* Choose a PCB vendor (such as JLCPCB) and place an order with the gerber zip file (latest `Production\PCB\diva_main_xxx.zip`), regular FR-4 board, black color, thickness is **1.6mm**.  
+* Choose a PCB vendor (such as JLCPCB) and place an order with the gerber zip file (latest `Production\PCB\diva_xxx_xxx.zip`), regular FR-4 board, black color, thickness is **1.6mm**.  
   <img src="doc/pcb.jpg" width="60%">
 
-* 1x Rasberry Pico Pi Pico or pin-to-pin compatible clones.  
+* 1x Rasberry Pico Pi Pico or **pin-to-pin** compatible clones.  
   https://www.raspberrypi.com/products/raspberry-pi-pico  
   Sticking a thin scotch tape to avoid short-circuit is a good idea.  
   <img src="doc/some_tape.jpg" width="40%">
 
-* 16x WS2812B-4020 side-facing RGB LEDs for the slider.  
+* 16x WS2812B-4020 (32x for Diva Pico+) side-facing RGB LEDs for the slider.  
   https://www.lcsc.com/product-detail/Light-Emitting-Diodes-LED_Worldsemi-WS2812B-4020_C965557.html
-* 9x WS2812B-3528 RGB LEDs for the buttons.
-* 1x 0603 10ohm resistor (R3), or if you feel it's not challenging, go with SN74LV1T34DBVR (SOT-23-5) level shifter (U8), you only need either of them.
-  https://www.lcsc.com/product-detail/Buffer-Driver-Transceiver_Texas-Instruments-SN74LV1T34DBVR_C100024.html
+* 9x WS2812B-3528 RGB LEDs for Diva Pico buttons. For Diva Pico+, you need 17x WS2812B-3528 reverse mount RGB LEDs.
 
-* 2x MPR121 modules, there're many types in the market, choose ones like this.  
+* 2x MPR121 modules (3x for Diva Pico+), there're many types in the market, choose ones like this.  
   https://www.sparkfun.com/products/retired/9695  
-  Before solder MP121 module to the main PCB board, remember to use a knife to **cut (unshort) the tiny trace that connects ADDR to the GND**. Please be careful not to cut more than necessary.  
+  Before solder MP121 module to the main PCB board, remember to use a knife to **cut (unshort) the tiny trace that connects ADDR to the GND**. You can cut the red part as shown in the image. Please be careful not to cut more than necessary.  
   <img src="doc/mpr121_cut.png" width="40%">  
 
 * 8x 0603 1uF (0.1~1uF all fine) capacitors (C1 to C8), OPTIONAL, recommended.
 
-* 4x Kailh choc v1 switches, use heavy linear ones (dark yellow is the best, the force is around 70gf).  
+* 4x Kailh choc v1 switches, dark yellow is recommeded for its 70gf force.  
   <img src="doc/choc_v1.jpg" width="50%">
 
 * 2x Alps SKSTAAE010 tactile switches.
@@ -100,7 +98,7 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
 * 1x Omron B3F-4005 or B3F-4000 micro-switch.
   https://www.mouser.com/ProductDetail/Omron-Electronics/B3F-4000?qs=B3tblJ0Nlt8c5sbFRctxww%3D%3D
 
-* 3M 5423 or 5421 UHMW PE film tape, important for button feel. 5423 is better for its thickness.  
+* For Diva Pico only, 3M 5423 or 5421 UHMW PE film tape, important for button feel. 5423 is better for its thickness.  
   https://www.3m.com/3M/en_US/p/d/b40069119/
 
   You need to apply tapes to the contact surface of button to switch and button to base clamp.  
@@ -108,17 +106,23 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
   <img src="doc/3m_tape_1.jpg" width="25%">
   <img src="doc/3m_tape_2.jpg" width="25%">
 
-* 4x 2mm\*50mm (diameter\*length) steel rods for the button lever structure.
+
+* For Diva Pico only, 4x 2mm\*50mm (diameter\*length) steel rods for the button lever structure.
+
+* For Diva Pico+ only, 8x U-shape 2U stabilizer steel wires, you can also harvest them from regular 2U MX stabilizers. I invented this structure originally in my Voltex Pico project, checkout Voltex Pico repository for more details.
+
+* For Diva Pico+ only, 4x 3mm\*5mm\*10mm regular springs for increasing the button force.
 
 ### Light Guide Panel
-* Find a service to cut a light guide panel or a frosted acrylic panel. It's a perfect rectangle, the size is 240mm*42mm, 1.8mm to 2.0mm thickness, so you don't need a CAD file.  
-  <img src="doc/lgp.jpg" width="60%">
+* Find a service to cut a light guide panel or a frosted acrylic panel. It's a perfect rectangle, 1.8mm to 2.0mm thickness
+  * For Diva Pico, the size is 240mm\*42mm.
+  * For Diva Pico+, the size is 329mm\*47mm.
 * This is what a decent light guide panel looks like.  
   <img src="doc/good_lgp.png" width="80%">
 
 ### 3D Printing
 * You might need a Bambu 3D printer:
-  * Parts are designed to perfectly fit in its 256mm*256mm print bed.
+  *  For Diva Pico, a 256\*256mm bed is fine; for Diva Pico+ you need a H2D-sized bed.
   * Its AMS system works great for multi-color printing.
 * Printing parameters  
   * PLA, PETG, ABS are all OK.
@@ -126,10 +130,10 @@ Many DIY enthusiasts commonly make certain mistakes during the building process.
   * Layer height: 0.2mm
   * Support: Yes, always.
 
-* Base: `Production\3D\diva_pico_base.stl`.
-* Cover Base: `Production\3D\diva_pico_support.stl`.
-* Cover: `Production\3D\diva_pico_panel.3mf`, with multi-color support.
-* Buttons: `Production\3D\diva_pico_button_combo.3mf`, with multi-color support.  
+* Base: `Production\3D\diva_xxx_base.stl`.
+* Cover Base: `Production\3D\diva_xxx_support.stl`.
+* Cover: `Production\3D\diva_xxx_panel.3mf`, with multi-color support.
+* Buttons: `Production\3D\diva_xxx_button_combo.3mf`, with multi-color support.  
   Note that button components (the button body, the seat and the logos on it) are mixed in one file, you need to cherry-pick before printing.  
   <img src="doc/cherrypick.png" width="40%">
 
@@ -140,13 +144,15 @@ From top to bottom:
 * PCB
 * Base
 
-You need **6x M3*10mm regular screws** to fix all things.
+For Diva Pico, you need **6x M3*10mm regular screws** to fix all things. For Diva Pico+, you need **9x M3\*8mm** regular screws and **4x M2\*8mm** flat head screws.
 
-6x silicone anti-slip pads can be applied to the bottom side of the base to provide stability when playing.  
+Apply some 10mm\*2mm silicone anti-slip pads to the bottom side of the base to provide stability when playing.  
 
 #### Button dome choices
-* Go buy this 60mm dome buttons with 48mm diameter dome. I found this (only) one is perfect, its inner diameter is 46mm. You need to print the buttons according to what dome you get.  
-  <img src="doc/dome_button.jpg" width="40%">
+* Go buy 60mm dome buttons.
+  * For Diva Pico+, a regular 60mm arcade dome button is fine.
+  * For Diva Pico, you should get this specific one, its inner diameter is 46mm.  
+    <img src="doc/dome_button.jpg" width="40%">
 
 ### Firmware
 * UF2 file is in `Production\Firmware` folder.

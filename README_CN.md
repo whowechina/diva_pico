@@ -70,24 +70,22 @@ https://discord.gg/M8f2PPQFEA
   请记住，器件绝大部分情况下都是好的，问题可能在焊接上。更换器件会带来额外的风险，比如损坏器件或 PCB 板。耐心和谨慎是至关重要的。首先查看原理图和 PCB 设计文件，并向社区寻求帮助。怀疑器件问题应该是你的最后选择。
 
 ### PCB
-* 找个 PCB 供应商（比如 JLCPCB）下单，使用最新的 `Production\PCB\diva_main_xxx.zip` 文件，选择常规 FR-4 板材，黑色，厚度为 **1.6mm**。  
+* 找个 PCB 供应商（比如 JLCPCB）下单，使用最新的 `Production\PCB\diva_xxx_xxx.zip` 文件，选择常规 FR-4 板材，黑色，厚度为 **1.6mm**。  
   <img src="doc/pcb.jpg" width="60%">
-* 1x 树莓派 Pico 或兼容的克隆板。  
+* 1x 树莓派 Pico 或**引脚全兼容**的克隆板。  
   https://www.raspberrypi.com/products/raspberry-pi-pico  
   在接触点附近贴上一层薄薄的透明胶带以避免短路。  
   <img src="doc/some_tape.jpg" width="40%">
-* 16x WS2812B-4020 侧向发光 RGB LED 用于滑条。  
+* 16x WS2812B-4020 (Diva Pico+ 需要 32x) 侧向发光 RGB LED 用于滑条。  
   https://www.lcsc.com/product-detail/Light-Emitting-Diodes-LED_Worldsemi-WS2812B-4020_C965557.html
-* 9x WS2812B-3528 RGB LED 用于按钮。
-* 1x 0603 10 欧姆电阻（R3），或者如果你嫌它太简单了，可以使用 SN74LV1T34DBVR（SOT-23-5）电平转换器（U8）来代替。  
-  https://www.lcsc.com/product-detail/Buffer-Driver-Transceiver_Texas-Instruments-SN74LV1T34DBVR_C100024.html
-* 2x MPR121 模块，市面上有很多种，选择这种类型的。  
+* 9x WS2812B-3528 RGB LED 用于 Diva Pico 按钮。Diva Pico+ 则需要 17x WS2812B-3528 反贴安装 RGB LED。
+* 2x MPR121 模块 (Diva Pico+ 需要 3x)，市面上有很多种，选择这种类型的。  
   https://www.sparkfun.com/products/retired/9695  
-  在焊接 MPR121 模块到主 PCB 板之前，记得用小刀**切断 ADDR 和 GND 之间的微小连线**，注意绝对不要切过头。  
+  在焊接 MPR121 模块到主 PCB 板之前，记得用小刀**切断 ADDR 和 GND 之间的微小连线**，建议按照图片切掉红色部分，不要越界，注意绝对不要切过头。  
   <img src="doc/mpr121_cut.png" width="40%">
 
 * 8x 0603 1uF（0.1~1uF 都可以）电容（C1 到 C8），可选，但建议焊上。
-* 4x Kailh choc v1 机械轴，建议使用重线性轴（深黄色最好的，按压力约为 70gf）。
+* 4x Kailh choc v1 机械轴，建议使用深黄色，因为它按压力约为 70gf。  
   <img src="doc/choc_v1.jpg" width="50%">
 * 2x Alps SKSTAAE010 轻触开关。  
   https://tech.alpsalpine.com/e/products/detail/SKSTAAE010/
@@ -95,7 +93,7 @@ https://discord.gg/M8f2PPQFEA
 * 1x Omron B3F-4005 或 B3F-4000 微动开关。  
   https://www.mouser.com/ProductDetail/Omron-Electronics/B3F-4000?qs=B3tblJ0Nlt8c5sbFRctxww%3D%3D
 
-* 3M 5423 或 5421 UHMW PE 薄膜胶带，对于按钮手感很重要。5423 更厚一些。  
+* 仅对于 Diva Pico, 3M 5423 或 5421 UHMW PE 薄膜胶带，对于按钮手感很重要。5423 更厚一些。  
   https://www.3m.com/3M/en_US/p/d/b40069119/
 
   你需要将胶带贴在按钮到开关的接触面和按钮到底座夹紧处。  
@@ -103,17 +101,23 @@ https://discord.gg/M8f2PPQFEA
   <img src="doc/3m_tape_1.jpg" width="25%">
   <img src="doc/3m_tape_2.jpg" width="25%">
 
-* 4x 2mm\*50mm（直径\*长度）钢轴用于按钮杠杆结构。
+* 仅对于 Diva Pico, 4x 2mm\*50mm（直径\*长度）钢轴用于按钮杠杆结构。
+
+* 仅对于 Diva Pico+, 8x U 型 2U 卫星轴钢丝，你也可以从常规的 2U MX 卫星轴里拆。最早我是为了 Voltex Pico 项目独创了这个结构，更多细节可以在 Voltex Pico 仓库查看。
+
+* 仅对于 Diva Pico+, 4x 3mm\*5mm\*10mm 普通弹簧用于增加按钮按压力。
 
 ### 导光板
-* 找一个服务切割导光板或者磨砂亚克力板。它是一个完美的矩形，尺寸是 240mm*42mm，厚度为 1.8mm 到 2.0mm，所以你不需要 CAD 文件。  
-  <img src="doc/lgp.jpg" width="60%">
+* 找一个服务切割导光板或者磨砂亚克力板。它是一个完美的矩形，厚度为 1.8mm 到 2.0mm。
+  * Diva Pico 导光板尺寸是 240mm\*42mm。
+  * Diva Pico+ 导光板尺寸是 329mm\*47mm。
 * 一个好的导光板看上去是这样的。  
   <img src="doc/good_lgp.png" width="80%">
 
 ### 3D 打印
 * 你可能需要一个 Bambu 3D 打印机：
-  * 部件都是为了完美适配 256mm*256mm 的打印床。
+  * Diva Pico 需要 256mm*256mm 的打印床。
+  * Diva Pico+ 则需要 H2D 尺寸的打印床。
   * 它的 AMS 系统非常适合多色打印。
 * 打印参数
   * PLA, PETG, ABS 都可以。
@@ -121,10 +125,10 @@ https://discord.gg/M8f2PPQFEA
   * 打印层高：0.2mm
   * 支撑：需要。
 
-* 主体：`Production\3D\diva_pico_base.stl`。
-* 支撑：`Production\3D\diva_pico_support.stl`。
-* 盖子：`Production\3D\diva_pico_panel.3mf`，支持多色打印。
-* 按钮：`Production\3D\diva_pico_button_combo.3mf`，支持多色打印。  
+* 主体：`Production\3D\diva_xxx_base.stl`。
+* 支撑：`Production\3D\diva_xxx_support.stl`。
+* 盖子：`Production\3D\diva_xxx_panel.3mf`，支持多色打印。
+* 按钮：`Production\3D\diva_xxx_button_combo.3mf`，支持多色打印。  
   注意，按钮组件（按钮主体，按钮座和上面的图案）都混在一个文件里，你需要在打印前挑选秩组合。  
   <img src="doc/cherrypick.png" width="40%">
 
@@ -135,12 +139,14 @@ https://discord.gg/M8f2PPQFEA
 * PCB
 * 主体
 
-你需要 **6x M3*10mm 普通螺丝** 来固定所有东西。
+对于 Diva Pico 你需要 **6x M3*10mm 普通螺丝** 来固定所有东西。对于 Diva Pico+ 你需要 **9x M3\*8mm 普通螺丝** 和 **4x M2\*8mm 沉头螺丝** 。
 
-6x 硅胶防滑垫可以贴在底座的底部，以提供游玩时的稳定性。
+在底部使用一些 10mm\*2mm 的硅胶防滑垫，玩的时候更稳一些。
 
 #### 按钮圆顶
-* 购买这种 60mm 的圆顶游戏机按钮，内径 46mm。  
+* 购买 60mm 的圆顶游戏机按钮。
+  * 对于 Diva Pico+，普通的 60mm 圆顶游戏机按钮就可以。
+  * 对于 Diva Pico，你要买这个特定的按钮，它的内径是 46mm。
   <img src="doc/dome_button.jpg" width="40%">
 
 ### 固件
